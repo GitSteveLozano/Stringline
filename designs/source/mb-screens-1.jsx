@@ -99,10 +99,10 @@ function App() {
     <OnbCtx.Provider value={{ bg: tw.onbBg, layout: tw.onbLayout, length: tw.onbLength }}>
     <DesignCanvas backgroundColor="#f0eee9" initialScale={0.55}>
       <div style={{padding: '50px 60px 8px', maxWidth: 880}}>
-        <div style={{fontSize:11, fontWeight:600, color:'rgba(60,50,40,0.55)', letterSpacing:'.10em', textTransform:'uppercase'}}>Sitelayer · Mobile</div>
+        <div style={{fontSize:11, fontWeight:600, color:'rgba(60,50,40,0.55)', letterSpacing:'.10em', textTransform:'uppercase'}}>Stringline · Mobile</div>
         <h1 style={{fontSize:46, fontWeight:700, letterSpacing:'-0.025em', margin:'8px 0 12px', color:'rgba(20,16,10,0.92)'}}>Run the day from your pocket.</h1>
         <p style={{fontSize:16, color:'rgba(60,50,40,0.70)', lineHeight:1.55, margin:0, maxWidth:680}}>
-          A complete mobile design pass for Sitelayer — every screen a contractor, foreman, or crew member touches on phone. Install + permissions, role-aware home, project flows (bid → estimate → schedule → time), rentals, settings, dedicated worker and foreman apps, and the system states that hold it all together.
+          A complete mobile design pass for Stringline — every screen a contractor, foreman, or crew member touches on phone. Install + permissions, role-aware home, project flows (bid → estimate → schedule → time), rentals, settings, dedicated worker and foreman apps, and the system states that hold it all together.
         </p>
       </div>
 
@@ -329,7 +329,7 @@ function App() {
       </DCSection>
 
       <div style={{padding:'40px 60px 80px', maxWidth:880, fontSize:13, color:'rgba(60,50,40,0.6)', lineHeight:1.6}}>
-        13 sections · ~85 screens · designed mobile-first against the existing Sitelayer brand and the desktop portal in <code style={{padding:'2px 6px', background:'rgba(60,50,40,0.06)', borderRadius:4}}>index.html</code>. Every screen sized to a 290×600 viewport (iPhone-class) with the same 4px grid, color tokens, and type stack as the desktop product.
+        13 sections · ~85 screens · designed mobile-first against the existing Stringline brand and the desktop portal in <code style={{padding:'2px 6px', background:'rgba(60,50,40,0.06)', borderRadius:4}}>index.html</code>. Every screen sized to a 290×600 viewport (iPhone-class) with the same 4px grid, color tokens, and type stack as the desktop product.
       </div>
     </DesignCanvas>
 

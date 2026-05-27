@@ -326,7 +326,7 @@ function SettingsConnect() {
 
         {/* Fees disclosure */}
         <div style={{marginTop:16, padding:'10px 12px', background:'#f7f4ef', borderRadius:10, fontSize:11, color:'#5b544c', lineHeight:1.5}}>
-          <strong style={{color:'#1c1816'}}>Fees:</strong> 2.9% + 30\u00a2 per card payment, 0.8% on ACH (capped at $5). No platform fee from Sitelayer.
+          <strong style={{color:'#1c1816'}}>Fees:</strong> 2.9% + 30\u00a2 per card payment, 0.8% on ACH (capped at $5). No platform fee from Stringline.
         </div>
 
         <div className="m-btn-stack" style={{marginTop:18}}>
@@ -481,7 +481,7 @@ function StateStale() {
         </div>
         <div style={{fontSize:20, fontWeight:600, letterSpacing:'-0.01em', marginBottom:6}}>New version available</div>
         <div style={{fontSize:13, color:'#5b544c', lineHeight:1.55, maxWidth:280, marginBottom:22}}>
-          Sitelayer updated while you had this page open. Reload to get the latest \u2014 we'll save your draft.
+          Stringline updated while you had this page open. Reload to get the latest \u2014 we'll save your draft.
         </div>
         <div className="m-btn-stack" style={{width:'100%', maxWidth:300}}>
           <button className="m-btn" data-variant="primary">Reload now</button>
@@ -688,7 +688,7 @@ function HelpSupport() {
         <div className="m-list-inset">
           <MRow leading={MI.send} leadingTone="accent" headline="Chat \u00b7 Pro support" supporting="Avg reply 8 min \u00b7 6 AM \u2013 8 PM MT"/>
           <MRow leading={MI.cam} headline="Book a 20-min screen share" supporting="Available Tuesdays + Thursdays"/>
-          <MRow leading={MI.doc} headline="Email \u00b7 help@sitelayer.co" supporting="Reply within one business day"/>
+          <MRow leading={MI.doc} headline="Email \u00b7 help@stringline.co" supporting="Reply within one business day"/>
         </div>
 
         {/* What's new */}

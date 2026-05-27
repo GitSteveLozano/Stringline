@@ -1,6 +1,6 @@
-// Sitelayer demo data — exterior cladding contractor (EIFS, stucco, masonry, siding)
+// Stringline demo data — exterior cladding contractor (EIFS, stucco, masonry, siding)
 // v2 — adds catalog, dispatches, returns, billing, reservations, suggestions
-window.SITELAYER_DATA = (function () {
+window.STRINGLINE_DATA = (function () {
   const scopeItems = [
     { code: 'EPS',    name: 'EPS Insulation',     unit: 'sqft', rate: 4.85,  color: '#E8A86B' },
     { code: 'BASE',   name: 'Basecoat',           unit: 'sqft', rate: 3.20,  color: '#C77B4F' },

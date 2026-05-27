@@ -446,7 +446,7 @@ function StateEmpty() {
         </svg>
         <div style={{fontSize:20, fontWeight:600, marginTop:18}}>No projects yet</div>
         <div style={{fontSize:13, color:'#5b544c', lineHeight:1.5, maxWidth:260, marginTop:8, marginBottom:24}}>
-          Start with an address or upload drawings — Sitelayer will help you get to a measurement plan in under a minute.
+          Start with an address or upload drawings — Stringline will help you get to a measurement plan in under a minute.
         </div>
         <div className="m-btn-stack" style={{width:'100%', maxWidth:280}}>
           <button className="m-btn" data-variant="primary">{MI.plus}<span>New project</span></button>
@@ -511,7 +511,7 @@ function StatePermissionDenied() {
         </div>
         <div style={{fontSize:20, fontWeight:600, letterSpacing:'-0.01em', marginBottom:6}}>Location is off</div>
         <div style={{fontSize:13, color:'#5b544c', lineHeight:1.5, maxWidth:280, marginBottom:24}}>
-          Sitelayer uses geofences to verify clock-in. Without location, your hours need a foreman to manually approve each one.
+          Stringline uses geofences to verify clock-in. Without location, your hours need a foreman to manually approve each one.
         </div>
         <div className="m-btn-stack" style={{width:'100%', maxWidth:300}}>
           <button className="m-btn" data-variant="primary">Open settings</button>

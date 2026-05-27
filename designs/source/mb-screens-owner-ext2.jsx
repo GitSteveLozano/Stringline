@@ -65,7 +65,7 @@ function SignInHome() {
         </button>
 
         <div style={{marginTop:24, paddingTop:18, borderTop:'1px solid #e8e3db', textAlign:'center', fontSize:12, color:'#8a8278'}}>
-          New to Sitelayer? <span style={{color:'#b46e2c', fontWeight:600}}>Create a workspace</span>
+          New to Stringline? <span style={{color:'#b46e2c', fontWeight:600}}>Create a workspace</span>
         </div>
       </div>
     </div>

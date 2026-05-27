@@ -14,7 +14,7 @@ function PWASplash() {
         <div style={{width:80, height:80, background:'#d9904a', borderRadius:20, display:'inline-flex', alignItems:'center', justifyContent:'center', marginBottom:20, boxShadow:'0 8px 32px rgba(217,144,74,.5)'}}>
           <span style={{fontSize:36, fontWeight:700, color:'#fff', letterSpacing:'-0.02em'}}>SL</span>
         </div>
-        <div style={{fontSize:18, fontWeight:600, letterSpacing:'-0.01em'}}>Sitelayer</div>
+        <div style={{fontSize:18, fontWeight:600, letterSpacing:'-0.01em'}}>Stringline</div>
         <div style={{fontSize:12, color:'#8a8278', marginTop:4}}>Construction operations</div>
       </div>
       <div style={{flex:1, display:'flex', alignItems:'flex-end', paddingBottom:40}}>
@@ -104,7 +104,7 @@ function NavDrawerOverflow() {
             <div style={{width:44, height:44, background:'#d9904a', borderRadius:22, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:600}}>MR</div>
             <div>
               <div style={{fontSize:15, fontWeight:600}}>Mike Reynolds</div>
-              <div style={{fontSize:11, color:'#aea69a'}}>Project Mgr · Sitelayer Co</div>
+              <div style={{fontSize:11, color:'#aea69a'}}>Project Mgr · Stringline Co</div>
             </div>
           </div>
           <div style={{display:'flex', alignItems:'center', gap:6, marginTop:12, fontSize:11, color:'#aea69a'}}>
@@ -263,7 +263,7 @@ function NavMore() {
           <div className="m-avatar" data-size="lg">MR</div>
           <div style={{flex:1, minWidth:0}}>
             <div style={{fontSize:15, fontWeight:600}}>Mike Reynolds</div>
-            <div style={{fontSize:12, color:'#8a8278'}}>Owner · Sitelayer Co</div>
+            <div style={{fontSize:12, color:'#8a8278'}}>Owner · Stringline Co</div>
           </div>
           <span className="m-pill" data-tone="green"><span className="m-dot"/>synced</span>
         </div>
@@ -273,7 +273,7 @@ function NavMore() {
         <Section title="You" items={personal}/>
 
         <div style={{padding:'18px 20px 24px', textAlign:'center', fontSize:11, color:'#aea69a', letterSpacing:'.04em'}}>
-          Sitelayer · v3.2.1 · Build 4280
+          Stringline · v3.2.1 · Build 4280
         </div>
       </div>
       <MBottomTabs active="more"/>

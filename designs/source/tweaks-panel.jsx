@@ -1,4 +1,4 @@
-/* Mobile design tokens — match Sitelayer brand */
+/* Mobile design tokens — match Stringline brand */
 :root {
   --m-sand: #f5f1ec;
   --m-sand-2: #ebe6df;

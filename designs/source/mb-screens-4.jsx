@@ -395,7 +395,7 @@ function SettingsHome() {
         </div>
 
         <div style={{padding:'10px 16px 30px', textAlign:'center', fontSize:11, color:'#aea69a'}}>
-          Sitelayer · v2.4.1 · Built Apr 28
+          Stringline · v2.4.1 · Built Apr 28
         </div>
       </div>
       <MBottomTabs active="more"/>

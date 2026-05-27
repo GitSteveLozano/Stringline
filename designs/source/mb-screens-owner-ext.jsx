@@ -298,7 +298,7 @@ function OnbCompany() {
           <div style={{fontSize:11, color:C.ink3, fontWeight:500, marginBottom:5}}>Workspace URL</div>
           <div style={{height:44, padding:'0 12px', background:C.card, border:`1px solid ${C.line}`, borderRadius:10, display:'flex', alignItems:'center', fontSize:14, fontFeatureSettings:'"tnum"'}}>
             <span style={{flex:1, color:C.ink}}>hillcrest</span>
-            <span style={{color:C.ink3}}>.sitelayer.co</span>
+            <span style={{color:C.ink3}}>.stringline.co</span>
             <span style={{marginLeft:8, color:'#2c8a55'}}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12l5 5L20 7"/></svg>
             </span>
@@ -816,7 +816,7 @@ function OnbChecklist() {
       </div>
 
       <div style={{padding:'10px 16px calc(env(safe-area-inset-bottom, 0) + 14px)', borderTop:`1px solid ${C.line}`, flexShrink:0}}>
-        <button className="m-btn" data-variant="primary" style={{height:48}}>Open Sitelayer</button>
+        <button className="m-btn" data-variant="primary" style={{height:48}}>Open Stringline</button>
       </div>
     </div>
   );
@@ -830,7 +830,7 @@ function OnbPermLocation() {
   const C = ONB_BG[bg];
   return (
     <OnbShell step={4} total={10} onSkip primary primaryLabel="Allow location" secondary secondaryLabel="Not now — set up manual clock-in">
-      <OnbTitle eyebrow="Step 4 · Permission" title="Auto clock-in on arrival." sub="When your crew shows up at a site, Sitelayer can clock them in without anyone reaching for their phone."/>
+      <OnbTitle eyebrow="Step 4 · Permission" title="Auto clock-in on arrival." sub="When your crew shows up at a site, Stringline can clock them in without anyone reaching for their phone."/>
 
       {/* Geofence visual */}
       <div style={{margin:'4px 0 16px', padding:'14px 14px 10px', background:C.card, border:`1px solid ${C.line}`, borderRadius:14, position:'relative', overflow:'hidden'}}>
