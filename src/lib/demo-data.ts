@@ -268,3 +268,49 @@ export const LIFECYCLE: ProjectStatus[] = [
 export function money0(n: number): string {
   return "$" + n.toLocaleString("en-US");
 }
+
+// ── Foreman: field intake ─────────────────────────────────────
+export type FieldItem = {
+  id: string;
+  who: string;
+  site: string;
+  kind: "Blocker" | "Photo" | "Note";
+  detail: string;
+  time: string;
+  resolved?: boolean;
+};
+
+export const fieldItems: FieldItem[] = [
+  { id: "f1", who: "Diego F.", site: "Hillcrest", kind: "Blocker", detail: "Out of EPS 1.5\" · 12 sheets to finish east wall", time: "12:48 PM" },
+  { id: "f2", who: "Marcus L.", site: "Hillcrest", kind: "Photo", detail: "East wall · auto-tagged EPS · 4 photos", time: "2:18 PM" },
+  { id: "f3", who: "Sara B.", site: "Aspen Ridge", kind: "Note", detail: "Stone delivery confirmed 7:30 AM tomorrow", time: "3:02 PM" },
+  { id: "f4", who: "Tomás R.", site: "Hillcrest", kind: "Blocker", detail: "Scaffold tag missing on tower 3", time: "11:10 AM", resolved: true },
+];
+
+// ── Foreman: today's daily log (auto-populated context + narrative) ──
+export const todayLog = {
+  site: "Hillcrest Mews — Ph 4",
+  weather: "Partly cloudy · 64°F · 8 mph SW · 0% rain",
+  photos: 12,
+  crewHours: 32.3,
+  sqftDone: 980,
+  sqftPlanned: 1284,
+  submitted: false,
+  narrative:
+    "EPS 76% complete on east elevation. Marcus and Tomás taped seams ahead of schedule. Found a soft spot near the vapor barrier — flagged for inspection.",
+};
+
+// ── Foreman: this week's crew hours (no dollars — money hidden) ──
+export const foremanWeek = {
+  label: "Week of May 25",
+  totalHours: 189,
+  crewCount: 5,
+  flagged: 1,
+  days: [
+    { d: "M", h: 38 },
+    { d: "T", h: 39 },
+    { d: "W", h: 40 },
+    { d: "T", h: 38 },
+    { d: "F", h: 34 },
+  ],
+};
