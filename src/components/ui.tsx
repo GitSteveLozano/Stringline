@@ -256,3 +256,21 @@ export function Fill({ className, ...rest }: DivProps) {
 export function Scroll({ className, ...rest }: DivProps) {
   return <div className={cn("v2-flex-1", className)} style={{ overflowY: "auto" }} {...rest} />;
 }
+
+/* ── Field (text input) ── */
+export function Field({
+  label,
+  className,
+  ...rest
+}: React.InputHTMLAttributes<HTMLInputElement> & { label?: string }) {
+  return (
+    <label style={{ display: "block" }}>
+      {label && (
+        <div className="v2-eyebrow" style={{ marginBottom: 6 }}>
+          {label}
+        </div>
+      )}
+      <input className={cn("v2-field", className)} {...rest} />
+    </label>
+  );
+}

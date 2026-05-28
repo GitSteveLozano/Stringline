@@ -471,6 +471,30 @@ body {
   min-height: 0;
 }
 
+/* FIELD · text input */
+.v2-field {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 14px;
+  border: 2px solid var(--v2-ink);
+  background: var(--v2-sand);
+  color: var(--v2-ink);
+  font-family: var(--v2-font);
+  font-size: 16px;
+  outline: none;
+}
+.v2-field::placeholder {
+  color: var(--v2-ink-4);
+}
+.v2-field:focus {
+  border-color: var(--v2-accent);
+}
+.v2-screen.dark .v2-field {
+  background: var(--v2-ink);
+  color: var(--v2-sand);
+  border-color: var(--v2-sand-2);
+}
+
 /* ============================================================
    App frame — center a phone-width column on larger screens.
    ============================================================ */
