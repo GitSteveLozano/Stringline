@@ -4,6 +4,9 @@ import { TABS } from "@/lib/personas";
 import { Placeholder } from "@/components/placeholder";
 import { OwnerHome } from "./owner-home";
 import { OwnerProjects } from "./owner-projects";
+import { OwnerMoney } from "./owner-money";
+import { OwnerTeam } from "./owner-team";
+import { OwnerMore } from "./owner-more";
 import { EstimatorHome } from "./estimator-home";
 import { ForemanHome } from "./foreman-home";
 import { WorkerHome } from "./worker-home";
@@ -14,6 +17,9 @@ type Entry = { title: string; Comp: ComponentType };
 const REGISTRY: Record<string, Entry> = {
   owner: { title: "Stringline", Comp: OwnerHome },
   "owner/projects": { title: "Projects", Comp: OwnerProjects },
+  "owner/money": { title: "Money", Comp: OwnerMoney },
+  "owner/team": { title: "Team", Comp: OwnerTeam },
+  "owner/more": { title: "More", Comp: OwnerMore },
   estimator: { title: "Takeoffs", Comp: EstimatorHome },
   foreman: { title: "Today", Comp: ForemanHome },
   worker: { title: "Today", Comp: WorkerHome },
