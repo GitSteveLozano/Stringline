@@ -1,0 +1,27 @@
+/* Stringline V2 design tokens (extracted from standalone bundle) */
+:root {
+  /* ── Surface */
+  --v2-sand:        #EDE7DA;
+  --v2-sand-2:      #E0D8C5;
+  --v2-sand-soft:   #F4EFE3;
+  --v2-ink:         #0F0E0C;
+  --v2-ink-2:       #2E2A23;
+  --v2-ink-3:       #5F584C;
+  --v2-ink-4:       #8B8474;
+  --v2-line:        #0F0E0C;
+  --v2-line-soft:   #C8C0AC;
+
+  /* ── Single saturated accent */
+  --v2-accent:      #FFD400;
+  --v2-accent-ink:  #1F1900;
+
+  /* ── Semantic */
+  --v2-good:        #1A8A4C;
+  --v2-bad:         #C7331E;
+  --v2-warn:        #C58A14;
+
+  /* ── Type */
+  --v2-font:        "Inter", system-ui, sans-serif;
+  --v2-font-tight:  "Inter Tight", "Inter", sans-serif;
+  --v2-font-mono:   "JetBrains Mono", ui-monospace, monospace;
+}
