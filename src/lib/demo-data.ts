@@ -314,3 +314,42 @@ export const foremanWeek = {
     { d: "F", h: 34 },
   ],
 };
+
+// ── Worker: today's scope (goal + ordered step plan) ──────────
+export const workerScope = {
+  goalSqft: 1284,
+  doneSqft: 720,
+  scopedBy: "Ana",
+  scopedAt: "6:42 AM",
+  steps: [
+    { label: "Insulation board · east wall", done: true },
+    { label: "Plate fasteners", done: true },
+    { label: "Mesh + corner bead", done: false, now: true },
+    { label: "Cleanup + cover", done: false },
+  ],
+  onSite: "Materials staged at south gate · scaffold A is yours.",
+};
+
+// ── Worker: my week hours ─────────────────────────────────────
+export const workerWeek = {
+  totalHours: 32.8,
+  grossPay: 1247,
+  days: [
+    { d: "M", h: 8.2 },
+    { d: "T", h: 8.0 },
+    { d: "W", h: 8.4 },
+    { d: "T", h: 8.2, today: true },
+    { d: "F", h: 0, plan: 8 },
+  ],
+  entries: [
+    { date: "Wed · Apr 28", site: "Hillcrest", hours: 8.4, status: "Approved" },
+    { date: "Tue · Apr 27", site: "Hillcrest", hours: 8.0, status: "Approved" },
+    { date: "Mon · Apr 26", site: "Hillcrest", hours: 8.2, status: "Approved" },
+  ],
+};
+
+// ── Worker: photo log (scope-tagged, by day) ──────────────────
+export const workerPhotos = [
+  { day: "Today · Apr 28", items: [{ tag: "EPS", time: "2:18 PM" }, { tag: "BASE", time: "1:42 PM" }, { tag: "EPS", time: "11:08 AM" }] },
+  { day: "Yesterday · Apr 27", items: [{ tag: "EPS", time: "" }, { tag: "EPS", time: "" }, { tag: "BASE", time: "" }] },
+];

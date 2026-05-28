@@ -14,6 +14,9 @@ import { ForemanField } from "./foreman-field";
 import { ForemanLog } from "./foreman-log";
 import { ForemanTime } from "./foreman-time";
 import { WorkerHome } from "./worker-home";
+import { WorkerScope } from "./worker-scope";
+import { WorkerHours } from "./worker-hours";
+import { WorkerLog } from "./worker-log";
 
 type Entry = { title: string; Comp: ComponentType };
 
@@ -31,6 +34,9 @@ const REGISTRY: Record<string, Entry> = {
   "foreman/log": { title: "Daily log", Comp: ForemanLog },
   "foreman/time": { title: "Time", Comp: ForemanTime },
   worker: { title: "Today", Comp: WorkerHome },
+  "worker/scope": { title: "Scope", Comp: WorkerScope },
+  "worker/hours": { title: "Hours", Comp: WorkerHours },
+  "worker/log": { title: "Log", Comp: WorkerLog },
 };
 
 export function resolveScreen(role: Role, tab: string | null): Entry {
