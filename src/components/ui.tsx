@@ -52,7 +52,7 @@ export function IconButton({
   ...rest
 }: ButtonProps & { accent?: boolean }) {
   return (
-    <button className={cn("v2-iconbtn", accent && "accent", className)} {...rest}>
+    <button type="button" className={cn("v2-iconbtn", accent && "accent", className)} {...rest}>
       {children}
     </button>
   );
@@ -114,7 +114,7 @@ export function Button({
   ...rest
 }: ButtonProps & { variant?: "primary" | "ghost" | "danger" }) {
   return (
-    <button className={cn("v2-btn", variant, className)} {...rest}>
+    <button type="button" className={cn("v2-btn", variant, className)} {...rest}>
       {children}
     </button>
   );
@@ -194,7 +194,7 @@ export function Tile({
   ...rest
 }: ButtonProps & { variant?: "accent" | "dark" | "danger" }) {
   return (
-    <button className={cn("v2-tile", variant, className)} {...rest}>
+    <button type="button" className={cn("v2-tile", variant, className)} {...rest}>
       {children}
     </button>
   );
