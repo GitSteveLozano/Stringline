@@ -1,0 +1,10 @@
+{
+  "name": "Stringline",
+  "short_name": "Stringline",
+  "description": "Run the day. Construction operations for exterior cladding subcontractors.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0F0E0C",
+  "theme_color": "#FFD400"
+}

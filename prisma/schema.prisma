@@ -1,0 +1,473 @@
+// Stringline schema — V2.
+// Core spine + the three V2SchemaSpec gap-closer entities (Guardrail,
+// ChangeOrder, LostReason). See designs/v2/READING.md §6 for the contract.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Identity, workspaces, roles
+// ─────────────────────────────────────────────────────────────
+
+enum BaseRole {
+  OWNER
+  ESTIMATOR
+  FOREMAN
+  WORKER
+}
+
+// Workers authenticate passwordless (SMS OTP); office roles use email+password/SSO.
+model User {
+  id           String       @id @default(cuid())
+  email        String?      @unique
+  phone        String?      @unique
+  name         String
+  passwordHash String?
+  avatarTone   Int          @default(1)
+  memberships  Membership[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+// Multi-LLC: an owner can hold several workspaces; a user can belong to many.
+model Workspace {
+  id          String       @id @default(cuid())
+  name        String
+  trade       String       @default("STUCCO")
+  subdomain   String       @unique
+  timezone    String       @default("America/Edmonton")
+  memberships Membership[]
+  clients     Client[]
+  projects    Project[]
+  scopeItems  ScopeItem[]
+  assets      Asset[]
+  customRoles CustomRole[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+// The "Wearing" model: one membership per (user, workspace, role). A solo
+// operator gets four memberships and switches hats; the active hat is client state.
+model Membership {
+  id           String      @id @default(cuid())
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  workspace    Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId  String
+  role         BaseRole
+  customRole   CustomRole? @relation(fields: [customRoleId], references: [id])
+  customRoleId String?
+  baseHourly   Decimal?    @db.Decimal(10, 2)
+  createdAt    DateTime    @default(now())
+
+  @@unique([userId, workspaceId, role])
+  @@index([workspaceId])
+}
+
+// Custom roles inherit one base role and add additive, parameterized capabilities.
+// canViewCosts gates the foreman money-wall (hidden by default).
+model CustomRole {
+  id                 String       @id @default(cuid())
+  workspace          Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId        String
+  name               String
+  base               BaseRole
+  canViewCosts       Boolean      @default(false)
+  canEditPricing     Boolean      @default(false)
+  canCreateProject   Boolean      @default(false)
+  authMaterialsLimit Decimal?     @db.Decimal(10, 2)
+  approveOtHours     Int?
+  memberships        Membership[]
+
+  @@index([workspaceId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Clients & projects
+// ─────────────────────────────────────────────────────────────
+
+model Client {
+  id          String    @id @default(cuid())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String
+  name        String
+  kind        String    @default("BUILDER") // BUILDER | GC | OWNER | ARCHITECT
+  email       String?
+  phone       String?
+  isLead      Boolean   @default(false)
+  projects    Project[]
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId])
+}
+
+enum ProjectType {
+  FIXED_BID
+  TIME_AND_MATERIALS
+  SERVICE
+  RENTAL
+  INTERNAL
+}
+
+enum ProjectStatus {
+  DRAFTING
+  SENT
+  ACCEPTED
+  IN_PROGRESS
+  DONE
+  PAID
+  ARCHIVED
+}
+
+enum ProjectHealth {
+  ON_TRACK
+  OVER_BUDGET
+  AT_RISK
+  PENDING
+}
+
+// LostReason (V2SchemaSpec): enum + freeform note, set when a bid is archived lost.
+enum LostReason {
+  PRICE
+  TIMING
+  SCOPE
+  GHOSTED
+  COMPETITOR
+  OTHER
+}
+
+model Project {
+  id            String        @id @default(cuid())
+  workspace     Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId   String
+  client        Client        @relation(fields: [clientId], references: [id])
+  clientId      String
+  name          String
+  type          ProjectType   @default(FIXED_BID)
+  status        ProjectStatus @default(DRAFTING)
+  health        ProjectHealth @default(PENDING)
+  address       String?
+  // Geofence (auto clock-in)
+  geoLat        Float?
+  geoLng        Float?
+  geoRadiusM    Int           @default(120)
+  // Economics
+  contractValue Decimal?      @db.Decimal(12, 2)
+  sqftTotal     Int?
+  targetSqftHr  Int?
+  // Lost-bid capture
+  lostReason    LostReason?
+  lostNote      String?
+
+  measurements Measurement[]
+  assignments  Assignment[]
+  timeEntries  TimeEntry[]
+  dailyLogs    DailyLog[]
+  guardrails   Guardrail[]
+  changeOrders ChangeOrder[]
+  invoices     Invoice[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([workspaceId])
+  @@index([clientId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Estimating: pricing book (assemblies) + takeoff measurements
+// ─────────────────────────────────────────────────────────────
+
+model ScopeItem {
+  id           String        @id @default(cuid())
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId  String
+  code         String // CSI or shorthand: EPS, BASE, STONE, 09 24 00 ...
+  name         String
+  unit         String // sqft | lf | ea
+  costRate     Decimal       @db.Decimal(10, 2)
+  sellRate     Decimal       @db.Decimal(10, 2)
+  color        String?
+  measurements Measurement[]
+
+  @@unique([workspaceId, code])
+  @@index([workspaceId])
+}
+
+enum Confidence {
+  HIGH
+  MED
+  LOW
+}
+
+model Measurement {
+  id          String      @id @default(cuid())
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+  scopeItem   ScopeItem?  @relation(fields: [scopeItemId], references: [id])
+  scopeItemId String?
+  code        String
+  notes       String?
+  qty         Float
+  unit        String
+  pointsJson  Json? // polygon vertices, normalized 0–100
+  confidence  Confidence?
+  reference   String? // INSIDE | CENTER | OUTSIDE (EIFS measurement ref)
+  createdAt   DateTime    @default(now())
+
+  @@index([projectId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Schedule, time, daily logs
+// ─────────────────────────────────────────────────────────────
+
+enum AssignmentStatus {
+  PENDING
+  SENT
+  CONFIRMED
+  DECLINED
+}
+
+model Assignment {
+  id          String           @id @default(cuid())
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+  date        DateTime
+  note        String?
+  scope       String?
+  sqft        Int?
+  suggestedHr Float?
+  plannedHr   Float?
+  status      AssignmentStatus @default(PENDING)
+  crewUserIds String[]
+  declineNote String?
+
+  @@index([projectId])
+}
+
+enum TimeSource {
+  AUTO
+  FOREMAN
+  MANUAL
+  REMINDER
+}
+
+enum Anomaly {
+  OVERTIME
+  OUTSIDE_GEOFENCE
+  NO_CLOCKOUT
+  MANUAL_OVERRIDE
+  UNDER_SCHEDULED
+  DUPLICATE
+}
+
+enum ApprovalStatus {
+  PENDING
+  FOREMAN_APPROVED
+  OWNER_APPROVED
+  REJECTED
+}
+
+model TimeEntry {
+  id        String         @id @default(cuid())
+  project   Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  userId    String
+  date      DateTime
+  clockIn   String?
+  clockOut  String?
+  hours     Float          @default(0)
+  source    TimeSource     @default(AUTO)
+  anomalies Anomaly[] // multiple flags per entry (V1 collapsed to one)
+  geo       String?
+  scope     String?
+  note      String?
+  approval  ApprovalStatus @default(PENDING)
+
+  @@index([projectId])
+  @@index([userId])
+}
+
+model DailyLog {
+  id          String    @id @default(cuid())
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+  foremanId   String
+  date        DateTime
+  submitted   Boolean   @default(false)
+  submittedAt DateTime?
+  weatherJson Json?
+  crewUserIds String[]
+  crewHours   Float?
+  photoCount  Int       @default(0)
+  sqftDone    Int?
+  sqftPlanned Int?
+  blockers    String?
+  narrative   String? // AI-drafted, foreman-edited
+
+  @@index([projectId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Guardrails (V2SchemaSpec) — drive the dashboard attention card + snooze
+// ─────────────────────────────────────────────────────────────
+
+enum GuardrailType {
+  MARGIN
+  SCHEDULE
+  SAFETY
+}
+
+enum GuardrailStatus {
+  ARMED
+  TRIGGERED
+  SNOOZED
+  MUTED
+}
+
+model Guardrail {
+  id           String          @id @default(cuid())
+  project      Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId    String
+  type         GuardrailType
+  threshold    Float
+  currentValue Float?
+  status       GuardrailStatus @default(ARMED)
+  snoozedUntil DateTime?
+  mutedReason  String?
+  updatedAt    DateTime        @updatedAt
+
+  @@index([projectId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Change orders (V2SchemaSpec) — accepted COs add valueDelta to the contract
+// ─────────────────────────────────────────────────────────────
+
+enum ChangeOrderStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+}
+
+model ChangeOrder {
+  id           String            @id @default(cuid())
+  project      Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId    String
+  number       Int
+  description  String
+  valueDelta   Decimal           @db.Decimal(12, 2)
+  status       ChangeOrderStatus @default(DRAFT)
+  createdById  String
+  approvedById String?
+  createdAt    DateTime          @default(now())
+
+  @@unique([projectId, number])
+  @@index([projectId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Invoicing — Stripe collects, QBO books
+// ─────────────────────────────────────────────────────────────
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIAL
+  PAID
+  OVERDUE
+}
+
+model Invoice {
+  id           String        @id @default(cuid())
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId    String
+  number       String
+  amount       Decimal       @db.Decimal(12, 2)
+  status       InvoiceStatus @default(DRAFT)
+  dueOn        DateTime?
+  stripeLinkId String?
+  qboInvoiceId String?
+  milestones   Milestone[]
+  createdAt    DateTime      @default(now())
+
+  @@index([projectId])
+}
+
+model Milestone {
+  id        String    @id @default(cuid())
+  invoice   Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoiceId String
+  label     String // Deposit | Midpoint | Final
+  percent   Int
+  amount    Decimal   @db.Decimal(12, 2)
+  paidOn    DateTime?
+
+  @@index([invoiceId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Rentals (lighter for now — drift/reservations/forecast to follow)
+// ─────────────────────────────────────────────────────────────
+
+model Asset {
+  id          String     @id @default(cuid())
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String
+  sku         String
+  name        String
+  category    String
+  dailyRate   Decimal    @db.Decimal(10, 2)
+  ownedQty    Int        @default(0)
+  replacement Decimal?   @db.Decimal(12, 2)
+  dispatches  Dispatch[]
+
+  @@unique([workspaceId, sku])
+  @@index([workspaceId])
+}
+
+enum DispatchStatus {
+  OUT
+  OVERDUE
+  RETURNED
+}
+
+model Dispatch {
+  id        String         @id @default(cuid())
+  ticketId  String
+  asset     Asset          @relation(fields: [assetId], references: [id])
+  assetId   String
+  qty       Int
+  projectId String
+  sentOn    DateTime
+  dueBack   DateTime?
+  status    DispatchStatus @default(OUT)
+  signedBy  String?
+
+  @@index([assetId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Notifications — per-persona kinds
+// ─────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  audience  BaseRole
+  kind      String // owner: AUTH|RISK|LOG|PAID · foreman: BLOCKER|CREW|SCHEDULE|AUTH · worker: NEXT|BRIEF|PAY|LOG
+  title     String
+  body      String?
+  projectId String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
