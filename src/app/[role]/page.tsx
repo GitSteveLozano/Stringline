@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { resolveScreen } from "@/screens/registry";
 import { getCurrentUser } from "@/server/auth";
+import { getUnreadCount } from "@/server/notifications";
 import type { Role } from "@/lib/personas";
 
 // Screens read from the database, so render on each request.
@@ -19,8 +20,9 @@ export default async function RoleHome({ params }: { params: Promise<{ role: str
   if (!me.roles.includes(r)) redirect(`/${me.roles[0] ?? "owner"}`);
   const { title, Comp } = resolveScreen(r, null);
   const Screen = Comp as ComponentType;
+  const unread = await getUnreadCount();
   return (
-    <AppShell role={r} title={title} roles={me.roles}>
+    <AppShell role={r} title={title} roles={me.roles} unread={unread}>
       <Screen />
     </AppShell>
   );

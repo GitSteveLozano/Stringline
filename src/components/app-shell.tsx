@@ -18,11 +18,13 @@ export function AppShell({
   role,
   title,
   roles,
+  unread = 0,
   children,
 }: {
   role: Role;
   title: string;
   roles?: Role[];
+  unread?: number;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -63,6 +65,14 @@ export function AppShell({
           <div className="v2-appbar-title v2-only-mobile" style={{ flex: 1 }}>{title}</div>
           <div className="v2-appbar-title v2-only-desktop" style={{ flex: 1 }}>{sectionTitle}</div>
           <WearingControl role={role} roles={roles} />
+          <Link
+            href="/notifications"
+            className="v2-iconbtn v2-bell"
+            aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
+          >
+            <Icon name="bell" size={20} />
+            {unread > 0 && <span className="v2-bell-badge">{unread > 9 ? "9+" : unread}</span>}
+          </Link>
           <form action={signOut}>
             <IconButton aria-label="Sign out" type="submit">⏻</IconButton>
           </form>

@@ -482,8 +482,38 @@ async function main() {
     });
   }
 
+  // ── Notifications (per-persona inbox) ────────────────────────
+  // Kind taxonomy mirrors the schema comment: owner AUTH|RISK|LOG|PAID ·
+  // foreman BLOCKER|CREW|SCHEDULE|AUTH · worker NEXT|BRIEF|PAY|LOG.
+  const HOUR = 3_600_000;
+  const sarahId = userByName.get("Sarah Davis")!;
+  const mayaId = userByName.get("Maya Okonkwo")!;
+  const anaId = userByName.get("Ana Castillo")!;
+  const marcusLeeId = userByName.get("Marcus Lee")!;
+  const aspenId = projectIdByFixtureId.get("p-aspen") ?? null;
+
+  await db.notification.createMany({
+    data: [
+      // Owner
+      { userId: sarahId, audience: BaseRole.OWNER, kind: "RISK", title: "Aspen Ridge is over budget", body: "Labor is tracking 14% above the bid.", projectId: aspenId, createdAt: new Date(Date.now() - 1 * HOUR) },
+      { userId: sarahId, audience: BaseRole.OWNER, kind: "AUTH", title: "3 approvals waiting", body: "Materials and OT requests need your sign-off.", projectId: null, createdAt: new Date(Date.now() - 3 * HOUR) },
+      { userId: sarahId, audience: BaseRole.OWNER, kind: "PAID", title: "Cardinal Group paid $234,600", body: "Invoice cleared for Aspen Ridge Townhomes.", projectId: aspenId, createdAt: new Date(Date.now() - 26 * HOUR) },
+      { userId: sarahId, audience: BaseRole.OWNER, kind: "LOG", title: "Daily log submitted", body: "Hillcrest Mews — Ph 4, Day 18.", projectId: hillcrestId, read: true, createdAt: new Date(Date.now() - 30 * HOUR) },
+      // Estimator
+      { userId: mayaId, audience: BaseRole.ESTIMATOR, kind: "BID", title: "Riverbend Retail Shell is out for bid", body: "$93,200 sent to Northline Builders.", projectId: null, createdAt: new Date(Date.now() - 5 * HOUR) },
+      { userId: mayaId, audience: BaseRole.ESTIMATOR, kind: "WON", title: "Greenwillow Senior Living — won", body: "$428,900 moved to accepted.", projectId: null, read: true, createdAt: new Date(Date.now() - 48 * HOUR) },
+      // Foreman
+      { userId: anaId, audience: BaseRole.FOREMAN, kind: "BLOCKER", title: "Scaffold delivery delayed", body: "Hillcrest east elevation — crew blocked until noon.", projectId: hillcrestId, createdAt: new Date(Date.now() - 2 * HOUR) },
+      { userId: anaId, audience: BaseRole.FOREMAN, kind: "CREW", title: "Diego clocked in", body: "Hillcrest Mews — Ph 4.", projectId: hillcrestId, read: true, createdAt: new Date(Date.now() - 4 * HOUR) },
+      // Worker
+      { userId: marcusLeeId, audience: BaseRole.WORKER, kind: "NEXT", title: "Today: EPS · East elevation", body: "Scoped by Ana — 1,200 sqft goal.", projectId: hillcrestId, createdAt: new Date(Date.now() - 1 * HOUR) },
+      { userId: marcusLeeId, audience: BaseRole.WORKER, kind: "PAY", title: "Timesheet approved", body: "Last week — 41.5 hrs.", projectId: null, read: true, createdAt: new Date(Date.now() - 72 * HOUR) },
+    ],
+  });
+
   const counts = {
     users: await db.user.count(),
+    notifications: await db.notification.count(),
     projects: await db.project.count(),
     timeEntries: await db.timeEntry.count(),
     fieldReports: await db.fieldReport.count(),

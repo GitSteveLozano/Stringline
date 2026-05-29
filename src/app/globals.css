@@ -633,6 +633,31 @@ body {
   }
 }
 
+/* Notification bell badge */
+.v2-bell {
+  position: relative;
+}
+.v2-bell-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--v2-bad);
+  color: #fff;
+  border: 2px solid var(--v2-sand);
+  font-family: var(--v2-font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}
+.v2-screen.dark .v2-bell-badge {
+  border-color: var(--v2-ink);
+}
+
 /* Responsive visibility helpers */
 .v2-only-desktop {
   display: none;
