@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill, DataTable } from "@/components/ui";
+import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill, Button, DataTable } from "@/components/ui";
 import { getSchedule, type ScheduleEntry } from "@/server/schedule";
 import type { AssignmentStatus } from "@prisma/client";
 
@@ -50,6 +50,9 @@ export async function Schedule() {
           <div className="v2-quiet v2-body">
             {summary.assignments} {summary.assignments === 1 ? "assignment" : "assignments"} · {summary.confirmed} confirmed.
           </div>
+          <Link href="/schedule/new" style={{ textDecoration: "none" }}>
+            <Button variant="primary">+ Assign crew</Button>
+          </Link>
         </Stack>
       </Pad>
 

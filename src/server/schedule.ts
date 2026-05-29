@@ -81,3 +81,32 @@ export async function getSchedule(): Promise<{
     },
   };
 }
+
+/** Projects + crew the owner/foreman can assign (for the new-assignment form). */
+export async function getAssignableResources(): Promise<{
+  projects: { id: string; name: string }[];
+  crew: { id: string; name: string }[];
+}> {
+  const workspaceId = await getActiveWorkspaceId();
+  const [projects, memberships] = await Promise.all([
+    db.project.findMany({
+      where: { workspaceId, status: { in: ["ACCEPTED", "IN_PROGRESS"] } },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    db.membership.findMany({
+      where: { workspaceId, role: { in: ["FOREMAN", "WORKER"] } },
+      select: { userId: true, user: { select: { name: true } } },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
+  const seen = new Set<string>();
+  const crew: { id: string; name: string }[] = [];
+  for (const m of memberships) {
+    if (!seen.has(m.userId)) {
+      seen.add(m.userId);
+      crew.push({ id: m.userId, name: m.user.name });
+    }
+  }
+  return { projects, crew };
+}
