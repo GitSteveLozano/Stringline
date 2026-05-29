@@ -53,7 +53,7 @@ export async function Reports() {
           <Eyebrow>Insights</Eyebrow>
           <H1>{money0(r.pipelineValue)} in flight.</H1>
           <div className="v2-quiet v2-body">
-            {pct(r.winRate)} win rate · {r.activeCount} active {r.activeCount === 1 ? "job" : "jobs"}
+            {pct(r.winRate)} win rate · {r.activeCount} {r.activeCount === 1 ? "job" : "jobs"} in flight
             {r.overBudgetCount > 0 ? `, ${r.overBudgetCount} over budget` : ""}.
           </div>
         </Stack>
@@ -70,11 +70,11 @@ export async function Reports() {
       <div className="v2-cols">
         <section>
           <SectionBar>
-            <Eyebrow>Budget used by active job</Eyebrow>
+            <Eyebrow>Budget used by job</Eyebrow>
             <Mono>{r.overBudgetCount > 0 ? `${r.overBudgetCount} over` : "on track"}</Mono>
           </SectionBar>
           {r.jobs.length === 0 ? (
-            <Pad><div className="v2-quiet v2-body">No active jobs.</div></Pad>
+            <Pad><div className="v2-quiet v2-body">No jobs in flight.</div></Pad>
           ) : (
             r.jobs.map((j) => <JobBurnLine key={j.id} j={j} />)
           )}

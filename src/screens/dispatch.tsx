@@ -7,7 +7,7 @@ import { returnDispatch } from "@/server/actions";
 function DispatchItem({ d }: { d: DispatchRow }) {
   const sub =
     d.status === "OVERDUE"
-      ? `${d.project} · due back ${d.dueBack} · ${d.overdueDays}d late`
+      ? `${d.project} · due back ${d.dueBack} · ${d.overdueDays > 0 ? `${d.overdueDays}d late` : "due today"}`
       : d.status === "RETURNED"
         ? `${d.project} · returned`
         : `${d.project} · due back ${d.dueBack ?? "—"}`;

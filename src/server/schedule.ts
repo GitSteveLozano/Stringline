@@ -20,17 +20,17 @@ export type ScheduleDay = {
   entries: ScheduleEntry[];
 };
 
-const DAY_MS = 86_400_000;
-
 /** The next 7 days of crew assignments, bucketed by day. */
 export async function getSchedule(): Promise<{
   days: ScheduleDay[];
   summary: { assignments: number; crewDays: number; confirmed: number };
 }> {
   const workspaceId = await getActiveWorkspaceId();
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(start.getTime() + 7 * DAY_MS);
+  // Calendar-day math (not fixed 24h offsets) so day buckets stay aligned to
+  // local midnights across a DST transition.
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7);
 
   const rows = await db.assignment.findMany({
     where: { project: { workspaceId }, date: { gte: start, lt: end } },
@@ -62,7 +62,7 @@ export async function getSchedule(): Promise<{
 
   const todayKey = start.toDateString();
   const days: ScheduleDay[] = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(start.getTime() + i * DAY_MS);
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
     const key = d.toDateString();
     return {
       key,

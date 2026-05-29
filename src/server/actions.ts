@@ -537,6 +537,7 @@ export async function returnDispatch(id: string) {
     data: { status: "RETURNED" },
   });
   revalidatePath("/dispatch");
+  revalidatePath("/assets");
 }
 
 // ── Guardrails ─────────────────────────────────────────────────
