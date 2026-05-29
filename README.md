@@ -33,6 +33,25 @@ database via the query layer in [`src/server/`](src/server/); interactions are
 server actions in [`src/server/actions.ts`](src/server/actions.ts).
 `src/lib/demo-data.ts` is now just the seed source + shared label maps.
 
+### Visual review (screenshots)
+
+`npm run shots` drives a headless browser over the running app and writes PNGs to
+`shots/` (gitignored) — one per persona/route at both mobile (390px) and desktop
+(1440px) widths, so changes can be reviewed without a local UI. It signs in each
+persona by minting a session cookie, so the dev server and a seeded database must
+be running.
+
+```bash
+npm run dev                                   # in one shell
+npx playwright install chromium               # one-time, or set PLAYWRIGHT_EXECUTABLE
+npm run shots                                 # full catalog → shots/
+PERSONAS=owner WIDTHS=desktop ROUTES=/owner npm run shots   # one screen
+```
+
+This depends on `playwright-core`, which has no bundled browser: either run
+`npx playwright install chromium` or point `PLAYWRIGHT_EXECUTABLE` at a Chromium
+binary.
+
 ### What's wired end-to-end
 
 The core business loop is interactive and persisted, not mocked:
