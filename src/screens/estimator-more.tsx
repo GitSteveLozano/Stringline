@@ -1,9 +1,10 @@
+import Link from "next/link";
 import { SectionBar, Eyebrow, Row } from "@/components/ui";
 import { Icon, type IconName } from "@/components/icon";
 import { getWorkspaceInfo } from "@/server/workspace";
 import { getCurrentUser } from "@/server/auth";
 
-const GROUPS: { heading: string; items: { label: string; icon: IconName }[] }[] = [
+const GROUPS: { heading: string; items: { label: string; icon: IconName; href?: string }[] }[] = [
   {
     heading: "Estimating",
     items: [
@@ -16,9 +17,9 @@ const GROUPS: { heading: string; items: { label: string; icon: IconName }[] }[] 
   {
     heading: "Workspace",
     items: [
-      { label: "Clients", icon: "clients" },
-      { label: "Integrations", icon: "queue" },
-      { label: "Settings", icon: "more" },
+      { label: "Clients", icon: "clients", href: "/estimator/clients" },
+      { label: "Integrations", icon: "queue", href: "/settings" },
+      { label: "Settings", icon: "more", href: "/settings" },
     ],
   },
   {
@@ -49,14 +50,23 @@ export async function EstimatorMore() {
               <Eyebrow>{g.heading}</Eyebrow>
             </SectionBar>
             <div>
-              {g.items.map((it) => (
-                <Row key={it.label} lead={<Icon name={it.icon} size={20} />}>
-                  <div style={{ flex: 1, minWidth: 0 }} className="v2-h3">
-                    {it.label}
-                  </div>
-                  <Icon name="chevron" size={16} />
-                </Row>
-              ))}
+              {g.items.map((it) => {
+                const row = (
+                  <Row lead={<Icon name={it.icon} size={20} />}>
+                    <div style={{ flex: 1, minWidth: 0 }} className="v2-h3">
+                      {it.label}
+                    </div>
+                    <Icon name="chevron" size={16} />
+                  </Row>
+                );
+                return it.href ? (
+                  <Link key={it.label} href={it.href} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+                    {row}
+                  </Link>
+                ) : (
+                  <div key={it.label}>{row}</div>
+                );
+              })}
             </div>
           </div>
         ))}
