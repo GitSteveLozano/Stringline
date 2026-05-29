@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill, Button } from "@/components/ui";
+import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill, Button, DataTable } from "@/components/ui";
 import { getTakeoffs } from "@/server/estimator";
 
 export async function EstimatorHome() {
@@ -25,7 +25,26 @@ export async function EstimatorHome() {
         <Mono>{cards.length}</Mono>
       </SectionBar>
 
-      <div>
+      {/* Desktop: takeoff table */}
+      <DataTable
+        columns={[
+          { label: "Bid" },
+          { label: "Client" },
+          { label: "State", width: "200px" },
+        ]}
+        rows={cards.map((t) => ({
+          id: t.id,
+          href: `/takeoff/${t.id}`,
+          cells: [
+            <span key="n" className="v2-gtd-strong">{t.name}</span>,
+            t.client,
+            <Pill key="s" tone={t.tone} dot={t.tone === "live"}>{t.state}</Pill>,
+          ],
+        }))}
+      />
+
+      {/* Mobile: cards */}
+      <div className="v2-only-mobile">
         {cards.map((t) => (
           <Link key={t.id} href={`/takeoff/${t.id}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
             <Row lead={<span className="v2-mono" style={{ fontWeight: 700 }}>{t.name[0]}</span>}>
