@@ -50,24 +50,30 @@ export async function OwnerTeam() {
         </Link>
       </Pad>
 
-      <SectionBar>
-        <Eyebrow>Office</Eyebrow>
-        <Mono>{office.length}</Mono>
-      </SectionBar>
-      <div>
-        {office.map((m) => (
-          <MemberRow key={m.id} m={m} />
-        ))}
-      </div>
+      <div className="v2-cols">
+        <section>
+          <SectionBar>
+            <Eyebrow>Office</Eyebrow>
+            <Mono>{office.length}</Mono>
+          </SectionBar>
+          <div>
+            {office.map((m) => (
+              <MemberRow key={m.id} m={m} />
+            ))}
+          </div>
+        </section>
 
-      <SectionBar>
-        <Eyebrow>Field</Eyebrow>
-        <Mono>{field.length}</Mono>
-      </SectionBar>
-      <div>
-        {field.map((m) => (
-          <MemberRow key={m.id} m={m} />
-        ))}
+        <section>
+          <SectionBar>
+            <Eyebrow>Field</Eyebrow>
+            <Mono>{field.length}</Mono>
+          </SectionBar>
+          <div>
+            {field.map((m) => (
+              <MemberRow key={m.id} m={m} />
+            ))}
+          </div>
+        </section>
       </div>
     </>
   );
