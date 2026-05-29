@@ -628,3 +628,21 @@ export async function createDispatch(formData: FormData) {
   revalidatePath("/assets");
   redirect("/dispatch");
 }
+
+// ── Clients ────────────────────────────────────────────────────
+
+/** Create a client (book of business). Redirects to the new client's profile. */
+export async function createClient(formData: FormData) {
+  const workspaceId = await getActiveWorkspaceId();
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return;
+  const kindRaw = String(formData.get("kind") ?? "BUILDER").toUpperCase();
+  const kind = CLIENT_KINDS.includes(kindRaw) ? kindRaw : "BUILDER";
+  const email = String(formData.get("email") ?? "").trim() || null;
+  const phone = String(formData.get("phone") ?? "").trim() || null;
+  const isLead = formData.get("isLead") === "on";
+
+  const client = await db.client.create({ data: { workspaceId, name, kind, email, phone, isLead } });
+  revalidatePath("/estimator/clients");
+  redirect(`/client/${client.id}`);
+}
