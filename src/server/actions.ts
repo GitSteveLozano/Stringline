@@ -507,3 +507,22 @@ export async function priceTakeoff(projectId: string): Promise<number> {
   revalidatePath("/estimator/queue");
   return total;
 }
+
+// ── Notifications ──────────────────────────────────────────────
+
+/** Mark one of the signed-in user's notifications read. */
+export async function markNotificationRead(id: string) {
+  const me = await getCurrentUser();
+  if (!me) return;
+  // Scope to the owner so a user can't touch another's notifications.
+  await db.notification.updateMany({ where: { id, userId: me.id }, data: { read: true } });
+  revalidatePath("/notifications");
+}
+
+/** Mark all of the signed-in user's notifications read. */
+export async function markAllNotificationsRead() {
+  const me = await getCurrentUser();
+  if (!me) return;
+  await db.notification.updateMany({ where: { userId: me.id, read: false }, data: { read: true } });
+  revalidatePath("/notifications");
+}
