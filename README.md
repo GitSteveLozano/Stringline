@@ -29,10 +29,31 @@ npm run db:seed             # seed the demo workspace: team, projects, billing
 ```
 
 Every persona screen (owner, estimator, foreman, worker) reads live from the
-database via the query layer in [`src/server/`](src/server/); interactions
-(clock in/out, approvals, daily log, scope steps, takeoff scale gate, …) are
+database via the query layer in [`src/server/`](src/server/); interactions are
 server actions in [`src/server/actions.ts`](src/server/actions.ts).
 `src/lib/demo-data.ts` is now just the seed source + shared label maps.
+
+### What's wired end-to-end
+
+The core business loop is interactive and persisted, not mocked:
+
+- **Bids & pipeline** — create a project ("New bid" / "New project"), with an
+  existing or new client. The estimator's **Queue** buckets every project by
+  stage (drafting → out for bid → won, plus lost) with pipeline value and a win
+  rate; **Clients** and the pricing-book **Library** read live too.
+- **Takeoff → estimate** — the canvas draws and saves measurements, "Run AI
+  takeoff" persists a draft, and "Push to estimate" prices measurements ×
+  scope sell rates into the project's bid value.
+- **Project lifecycle** — the detail screen advances a project
+  `DRAFTING → SENT → ACCEPTED → IN_PROGRESS → DONE → PAID` (forward-only, with
+  side effects), or marks a pre-acceptance bid **lost** with a reason.
+- **Change orders** — log a CO, accept/reject it; accepted COs fold into the
+  contract value.
+- **Invoicing** — a completed project generates a final invoice (whose unpaid
+  balance surfaces in owner **Money** receivables); recording payment settles
+  the milestones and closes the project to PAID.
+- **Field** — clock in/out/break, scope steps, daily log, field reports, and
+  owner **Approvals**; owners confirm invited **Team** members.
 
 ### Signing in
 
