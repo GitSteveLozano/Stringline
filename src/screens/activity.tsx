@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row } from "@/components/ui";
+import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, DataTable } from "@/components/ui";
 import { Icon } from "@/components/icon";
 import { getActivity, type ActivityItem } from "@/server/activity";
 
@@ -41,7 +41,32 @@ export async function Activity() {
         <Eyebrow>Recent</Eyebrow>
         <Mono>{items.length}</Mono>
       </SectionBar>
-      <div>
+
+      {/* Desktop: event table */}
+      <DataTable
+        columns={[
+          { label: "Event" },
+          { label: "Type", width: "140px" },
+          { label: "Where" },
+          { label: "When", num: true, width: "110px" },
+        ]}
+        rows={items.map((a) => ({
+          id: a.id,
+          href: a.projectId ? `/project/${a.projectId}` : undefined,
+          cells: [
+            <span key="e" style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+              <Icon name={a.icon} size={18} />
+              <span className="v2-gtd-strong">{a.title}</span>
+            </span>,
+            a.kind,
+            a.sub,
+            a.ago,
+          ],
+        }))}
+      />
+
+      {/* Mobile: feed */}
+      <div className="v2-only-mobile">
         {items.length === 0 ? (
           <Pad><div className="v2-quiet v2-body">No activity yet.</div></Pad>
         ) : (

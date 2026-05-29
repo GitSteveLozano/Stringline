@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill } from "@/components/ui";
+import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill, DataTable } from "@/components/ui";
 import { getSchedule, type ScheduleEntry } from "@/server/schedule";
 import type { AssignmentStatus } from "@prisma/client";
 
@@ -53,20 +53,47 @@ export async function Schedule() {
         </Stack>
       </Pad>
 
-      <div className="v2-cols">
-        {days.map((d) => (
-          <section key={d.key}>
-            <SectionBar>
-              <Eyebrow accent={d.isToday}>{d.isToday ? `Today · ${d.label}` : d.label}</Eyebrow>
-              <Mono>{d.entries.length || "—"}</Mono>
-            </SectionBar>
-            {d.entries.length === 0 ? (
-              <Pad><div className="v2-quiet" style={{ fontSize: 13 }}>No crew scheduled.</div></Pad>
-            ) : (
-              d.entries.map((e) => <EntryRow key={e.id} e={e} />)
-            )}
-          </section>
-        ))}
+      {/* Desktop: one schedule table */}
+      <DataTable
+        columns={[
+          { label: "Day", width: "150px" },
+          { label: "Scope" },
+          { label: "Project" },
+          { label: "Crew", width: "160px" },
+          { label: "Status", width: "140px" },
+        ]}
+        rows={days.flatMap((d) =>
+          d.entries.map((e) => ({
+            id: e.id,
+            href: `/project/${e.projectId}`,
+            cells: [
+              <span key="d" className={d.isToday ? "v2-gtd-strong" : undefined}>{d.isToday ? "Today" : d.label}</span>,
+              <span key="s" className="v2-gtd-strong">{e.scope ?? "—"}</span>,
+              e.project,
+              e.crew.join(", "),
+              statusPill(e.status),
+            ],
+          })),
+        )}
+      />
+
+      {/* Mobile: day-grouped cards */}
+      <div className="v2-only-mobile">
+        <div className="v2-cols">
+          {days.map((d) => (
+            <section key={d.key}>
+              <SectionBar>
+                <Eyebrow accent={d.isToday}>{d.isToday ? `Today · ${d.label}` : d.label}</Eyebrow>
+                <Mono>{d.entries.length || "—"}</Mono>
+              </SectionBar>
+              {d.entries.length === 0 ? (
+                <Pad><div className="v2-quiet" style={{ fontSize: 13 }}>No crew scheduled.</div></Pad>
+              ) : (
+                d.entries.map((e) => <EntryRow key={e.id} e={e} />)
+              )}
+            </section>
+          ))}
+        </div>
       </div>
     </>
   );

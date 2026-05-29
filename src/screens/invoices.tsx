@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill, StatTile } from "@/components/ui";
+import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill, StatTile, DataTable } from "@/components/ui";
 import { money0 } from "@/lib/demo-data";
 import { getInvoicing, type InvoiceRow, type InvoiceStatusView } from "@/server/invoicing";
 
@@ -52,30 +52,55 @@ export async function Invoices() {
         </div>
       </Pad>
 
-      <div className="v2-cols">
-        <section>
-          <SectionBar>
-            <Eyebrow>Outstanding</Eyebrow>
-            <Mono>{open.length}</Mono>
-          </SectionBar>
-          {open.length === 0 ? (
-            <Pad><div className="v2-quiet v2-body">Nothing outstanding — you&apos;re collected up.</div></Pad>
-          ) : (
-            open.map((inv) => <InvoiceLine key={inv.id} inv={inv} />)
-          )}
-        </section>
+      {/* Desktop: invoices table (outstanding first) */}
+      <DataTable
+        columns={[
+          { label: "Client" },
+          { label: "Project" },
+          { label: "Due", width: "150px" },
+          { label: "Balance", num: true, width: "140px" },
+          { label: "Status", width: "130px" },
+        ]}
+        rows={[...open, ...paid].map((inv) => ({
+          id: inv.id,
+          href: `/project/${inv.projectId}`,
+          cells: [
+            <span key="c" className="v2-gtd-strong">{inv.client}</span>,
+            inv.project,
+            inv.dueLabel,
+            money0(inv.balance > 0 ? inv.balance : inv.total),
+            statusPill(inv.status),
+          ],
+        }))}
+      />
 
-        <section>
-          <SectionBar>
-            <Eyebrow>Paid</Eyebrow>
-            <Mono>{paid.length}</Mono>
-          </SectionBar>
-          {paid.length === 0 ? (
-            <Pad><div className="v2-quiet v2-body">No paid invoices yet.</div></Pad>
-          ) : (
-            paid.map((inv) => <InvoiceLine key={inv.id} inv={inv} />)
-          )}
-        </section>
+      {/* Mobile: outstanding / paid cards */}
+      <div className="v2-only-mobile">
+        <div className="v2-cols">
+          <section>
+            <SectionBar>
+              <Eyebrow>Outstanding</Eyebrow>
+              <Mono>{open.length}</Mono>
+            </SectionBar>
+            {open.length === 0 ? (
+              <Pad><div className="v2-quiet v2-body">Nothing outstanding — you&apos;re collected up.</div></Pad>
+            ) : (
+              open.map((inv) => <InvoiceLine key={inv.id} inv={inv} />)
+            )}
+          </section>
+
+          <section>
+            <SectionBar>
+              <Eyebrow>Paid</Eyebrow>
+              <Mono>{paid.length}</Mono>
+            </SectionBar>
+            {paid.length === 0 ? (
+              <Pad><div className="v2-quiet v2-body">No paid invoices yet.</div></Pad>
+            ) : (
+              paid.map((inv) => <InvoiceLine key={inv.id} inv={inv} />)
+            )}
+          </section>
+        </div>
       </div>
     </>
   );
