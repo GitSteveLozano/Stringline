@@ -364,6 +364,35 @@ async function main() {
     },
   });
 
+  // ── Daily-log history (submitted journal entries) ────────────
+  const crewPair = [userByName.get("Marcus Lee")!, userByName.get("Diego Fontana")!];
+  const logHistory = [
+    { projectId: hillcrestId, foremanId: anaSchedId, daysAgo: 1, weather: "Sunny · 18°C", crewHours: 32, photos: 5, sqftDone: 1180, sqftPlanned: 1200, narrative: "East elevation EPS wrapped. Crew of 4 ran clean; mesh embed started on the north corner." },
+    { projectId: hillcrestId, foremanId: anaSchedId, daysAgo: 2, weather: "Overcast · 14°C", crewHours: 30, photos: 4, sqftDone: 960, sqftPlanned: 1000, narrative: "Base coat on south wall. Lost an hour to a late EPS delivery — flagged to the office." },
+    { projectId: hillcrestId, foremanId: anaSchedId, daysAgo: 3, weather: "Light rain AM · 12°C", crewHours: 22, photos: 3, sqftDone: 540, sqftPlanned: 800, narrative: "Rain held us to interior prep until 11. Scaffolded the west face for tomorrow." },
+    { projectId: aspenSchedId, foremanId: priyaId, daysAgo: 1, weather: "Sunny · 20°C", crewHours: 36, photos: 6, sqftDone: 820, sqftPlanned: 700, narrative: "Block B finish ahead of plan. Punch list started on units 4–6." },
+    { projectId: aspenSchedId, foremanId: priyaId, daysAgo: 2, weather: "Windy · 16°C", crewHours: 34, photos: 4, sqftDone: 610, sqftPlanned: 750, narrative: "Wind slowed stone veneer hoisting. Detail crew caught up on caulking." },
+  ].filter((l) => l.projectId) as { projectId: string; foremanId: string; daysAgo: number; weather: string; crewHours: number; photos: number; sqftDone: number; sqftPlanned: number; narrative: string }[];
+  for (const l of logHistory) {
+    const d = day(-l.daysAgo);
+    await db.dailyLog.create({
+      data: {
+        projectId: l.projectId,
+        foremanId: l.foremanId,
+        date: d,
+        submitted: true,
+        submittedAt: d,
+        weatherJson: { summary: l.weather },
+        crewUserIds: crewPair,
+        crewHours: l.crewHours,
+        photoCount: l.photos,
+        sqftDone: l.sqftDone,
+        sqftPlanned: l.sqftPlanned,
+        narrative: l.narrative,
+      },
+    });
+  }
+
   // ── Field intake (blockers / photos / notes) ─────────────────
   const fieldKind = (k: string): FieldKind =>
     k === "Blocker" ? FieldKind.BLOCKER : k === "Photo" ? FieldKind.PHOTO : FieldKind.NOTE;
@@ -593,6 +622,7 @@ async function main() {
     dispatches: await db.dispatch.count(),
     guardrails: await db.guardrail.count(),
     assignments: await db.assignment.count(),
+    dailyLogs: await db.dailyLog.count(),
     notifications: await db.notification.count(),
     projects: await db.project.count(),
     timeEntries: await db.timeEntry.count(),
