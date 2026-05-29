@@ -19,6 +19,7 @@ import {
   DispatchStatus,
   GuardrailType,
   GuardrailStatus,
+  AssignmentStatus,
 } from "@prisma/client";
 import {
   projects as fxProjects,
@@ -324,6 +325,28 @@ async function main() {
     },
   });
 
+  // ── Crew schedule (upcoming assignments across jobs) ─────────
+  // Marcus stays on today only (his worker scope reads the latest assignment
+  // from today forward); the week is built around Diego and Hank.
+  const DAY_MS = 86_400_000;
+  const diegoId = userByName.get("Diego Fontana")!;
+  const hankId = userByName.get("Hank Mueller")!;
+  const anaSchedId = userByName.get("Ana Castillo")!;
+  const priyaId = userByName.get("Priya Shah")!;
+  const aspenSchedId = projectIdByFixtureId.get("p-aspen");
+  const day = (n: number) => new Date(today.getTime() + n * DAY_MS);
+  const scheduleRows = [
+    { projectId: hillcrestId, date: day(0), scope: "Block B finish", crewUserIds: [diegoId, hankId], status: AssignmentStatus.CONFIRMED, sqft: 1100, plannedHr: 16, scopedById: anaSchedId },
+    { projectId: aspenSchedId, date: day(1), scope: "Detail + punch", crewUserIds: [hankId], status: AssignmentStatus.SENT, sqft: 600, plannedHr: 8, scopedById: priyaId },
+    { projectId: hillcrestId, date: day(1), scope: "EPS · North elevation", crewUserIds: [diegoId], status: AssignmentStatus.CONFIRMED, sqft: 900, plannedHr: 8, scopedById: anaSchedId },
+    { projectId: hillcrestId, date: day(2), scope: "Stone veneer · lobby", crewUserIds: [diegoId, hankId], status: AssignmentStatus.SENT, sqft: 450, plannedHr: 18, scopedById: anaSchedId },
+    { projectId: aspenSchedId, date: day(3), scope: "Caulk + seal", crewUserIds: [diegoId], status: AssignmentStatus.PENDING, sqft: 800, plannedHr: 9, scopedById: priyaId },
+    { projectId: hillcrestId, date: day(4), scope: "Punch list", crewUserIds: [hankId], status: AssignmentStatus.PENDING, sqft: 300, plannedHr: 6, scopedById: anaSchedId },
+  ].filter((r) => r.projectId) as { projectId: string; date: Date; scope: string; crewUserIds: string[]; status: AssignmentStatus; sqft: number; plannedHr: number; scopedById: string }[];
+  for (const r of scheduleRows) {
+    await db.assignment.create({ data: r });
+  }
+
   // ── Foreman daily log (today, unsubmitted) ───────────────────
   await db.dailyLog.create({
     data: {
@@ -569,6 +592,7 @@ async function main() {
     assets: await db.asset.count(),
     dispatches: await db.dispatch.count(),
     guardrails: await db.guardrail.count(),
+    assignments: await db.assignment.count(),
     notifications: await db.notification.count(),
     projects: await db.project.count(),
     timeEntries: await db.timeEntry.count(),
