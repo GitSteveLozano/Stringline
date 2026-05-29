@@ -9,6 +9,7 @@ export async function getTeam(): Promise<TeamMember[]> {
     where: { workspaceId },
     select: {
       id: true,
+      userId: true,
       role: true,
       baseHourly: true,
       pending: true,
@@ -18,7 +19,12 @@ export async function getTeam(): Promise<TeamMember[]> {
     orderBy: { createdAt: "asc" },
   });
 
-  return rows.map((m) => {
+  // One row per person: a solo operator who "wears" several hats has multiple
+  // memberships, but the roster should list them once (by their earliest role).
+  const seen = new Set<string>();
+  const unique = rows.filter((m) => (seen.has(m.userId) ? false : (seen.add(m.userId), true)));
+
+  return unique.map((m) => {
     const group: TeamMember["group"] =
       m.role === "FOREMAN" || m.role === "WORKER" ? "Field" : "Office";
     return {

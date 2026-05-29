@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill, StatTile } from "@/components/ui";
+import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill, StatTile, DataTable } from "@/components/ui";
 import { money0 } from "@/lib/demo-data";
 import { getReceivables, getCashSummary } from "@/server/money";
 
@@ -45,7 +45,22 @@ export async function OwnerMoney() {
           AR aging →
         </Link>
       </SectionBar>
-      <div>
+      <DataTable
+        columns={[
+          { label: "Client" },
+          { label: "Status", width: "220px" },
+          { label: "Balance", num: true, width: "150px" },
+        ]}
+        rows={ar.map((r) => ({
+          id: r.id,
+          cells: [
+            <span key="c" className="v2-gtd-strong">{r.client}</span>,
+            r.age.startsWith("overdue") ? <Pill key="s" tone="bad">Overdue · {r.age.replace("overdue ", "")}</Pill> : r.age,
+            money0(r.amount),
+          ],
+        }))}
+      />
+      <div className="v2-only-mobile">
         {ar.map((r) => {
           const overdue = r.age.startsWith("overdue");
           return (
