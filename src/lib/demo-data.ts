@@ -212,6 +212,7 @@ export const money = {
 // ── Per-project detail ────────────────────────────────────────
 export type BudgetLine = { label: string; bid: number; spent: number };
 export type ChangeOrderRow = {
+  id?: string;
   number: number;
   description: string;
   delta: number;

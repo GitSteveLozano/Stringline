@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getActiveWorkspaceId } from "./workspace";
+import { getCurrentUser } from "./auth";
 import { weekStart } from "./dates";
 import { LIFECYCLE } from "@/lib/demo-data";
 import type { ProjectStatus, LostReason } from "@prisma/client";
@@ -233,6 +234,66 @@ export async function advanceProjectStatus(id: string, to: ProjectStatus) {
   revalidatePath("/owner/projects");
   revalidatePath("/estimator");
   revalidatePath("/estimator/queue");
+  revalidatePath("/owner/money");
+}
+
+// ── Change orders ──────────────────────────────────────────────
+
+/**
+ * Log a change order against a project and send it for approval. The number
+ * auto-increments per project; the delta may be negative (a credit). Accepted
+ * COs fold into the contract value on the detail screen.
+ */
+export async function addChangeOrder(projectId: string, formData: FormData) {
+  const me = await getCurrentUser();
+  if (!me) return;
+  const project = await db.project.findFirst({
+    where: { id: projectId, workspaceId: me.workspaceId },
+    select: { id: true },
+  });
+  if (!project) return;
+
+  const description = String(formData.get("description") ?? "").trim();
+  const delta = Number(String(formData.get("delta") ?? "").replace(/[^0-9.-]/g, ""));
+  if (!description || !Number.isFinite(delta) || delta === 0) return;
+
+  const last = await db.changeOrder.findFirst({
+    where: { projectId },
+    orderBy: { number: "desc" },
+    select: { number: true },
+  });
+
+  await db.changeOrder.create({
+    data: {
+      projectId,
+      number: (last?.number ?? 0) + 1,
+      description,
+      valueDelta: delta,
+      status: "SENT",
+      createdById: me.id,
+    },
+  });
+
+  revalidatePath(`/project/${projectId}`);
+  revalidatePath("/owner/money");
+}
+
+/** Accept or reject a change order; accepting stamps the approver. */
+export async function decideChangeOrder(id: string, decision: "ACCEPTED" | "REJECTED") {
+  const me = await getCurrentUser();
+  if (!me) return;
+  const co = await db.changeOrder.findFirst({
+    where: { id, project: { workspaceId: me.workspaceId } },
+    select: { projectId: true },
+  });
+  if (!co) return;
+
+  await db.changeOrder.update({
+    where: { id },
+    data: { status: decision, approvedById: decision === "ACCEPTED" ? me.id : null },
+  });
+
+  revalidatePath(`/project/${co.projectId}`);
   revalidatePath("/owner/money");
 }
 
