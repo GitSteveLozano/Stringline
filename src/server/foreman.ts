@@ -2,12 +2,7 @@ import { db } from "@/lib/db";
 import { getActiveWorkspaceId } from "./workspace";
 import { listProjects } from "./projects";
 import { weekStart } from "./dates";
-
-const initials = (name: string) =>
-  name.split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
-
-const roleLabel = (role: string) =>
-  role === "FOREMAN" ? "Foreman" : role === "OWNER" ? "Owner" : role === "ESTIMATOR" ? "Estimator" : "Crew";
+import { initials, baseRoleLabel as roleLabel } from "./format";
 
 const startOfToday = () => {
   const d = new Date();
@@ -155,14 +150,10 @@ export async function getForemanTime() {
   });
 
   const byUser = new Map<string, { hours: number; flagged: boolean }>();
-  let flagged = 0;
   for (const e of entries) {
     const agg = byUser.get(e.userId) ?? { hours: 0, flagged: false };
     agg.hours += e.hours;
-    if (e.anomalies.length > 0) {
-      agg.flagged = true;
-      flagged += 1;
-    }
+    if (e.anomalies.length > 0) agg.flagged = true;
     byUser.set(e.userId, agg);
   }
 
@@ -183,6 +174,7 @@ export async function getForemanTime() {
 
   const label = `Week of ${since.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
   const totalHours = Math.round(entries.reduce((s, e) => s + e.hours, 0) * 10) / 10;
+  const flagged = crew.filter((c) => c.flagged).length;
 
   return { label, totalHours, crewCount: byUser.size, flagged, days, crew };
 }

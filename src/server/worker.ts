@@ -17,7 +17,8 @@ export async function getWorkerId(): Promise<{ id: string; name: string; rate: n
 const fmtElapsed = (clockIn: string): string => {
   const [h, m] = clockIn.split(":").map(Number);
   const now = new Date();
-  const mins = Math.max(0, now.getHours() * 60 + now.getMinutes() - h * 60 - m);
+  let mins = now.getHours() * 60 + now.getMinutes() - (h * 60 + m);
+  if (mins < 0) mins += 24 * 60; // crossed midnight
   return `${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, "0")}`;
 };
 
@@ -33,8 +34,11 @@ export async function getWorkerHome() {
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 
+  // Any open entry counts as on-the-clock — matches the clockIn guard, so a
+  // forgotten clock-out from a prior day stays visible (and clock-out-able).
   const open = await db.timeEntry.findFirst({
-    where: { userId: worker.id, clockOut: null, date: { gte: startOfToday } },
+    where: { userId: worker.id, clockOut: null },
+    orderBy: { date: "desc" },
     include: { project: { select: { name: true } } },
   });
 

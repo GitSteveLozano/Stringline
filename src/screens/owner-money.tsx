@@ -44,7 +44,7 @@ export async function OwnerMoney() {
         {ar.map((r) => {
           const overdue = r.age.startsWith("overdue");
           return (
-            <Row key={r.client}>
+            <Row key={r.id}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="v2-h3">{r.client}</div>
                 <div className="v2-quiet" style={{ fontSize: 13, marginTop: 2 }}>{r.age}</div>

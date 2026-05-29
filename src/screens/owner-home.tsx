@@ -42,7 +42,7 @@ export async function OwnerHome() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="v2-h3">{p.name}</div>
                 <div className="v2-quiet" style={{ fontSize: 13, marginTop: 2 }}>
-                  Day {p.dayOf} of {p.dayTotal} · {p.crewSize} crew on site
+                  {p.dayOf ? `Day ${p.dayOf} of ${p.dayTotal} · ` : ""}{p.crewSize} crew on site
                 </div>
               </div>
               <Pill tone={tone(p.health)} dot={p.health === "OVER_BUDGET"}>

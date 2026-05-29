@@ -27,7 +27,8 @@ export async function submitDailyLog(id: string) {
 export async function submitWeekForApproval() {
   const workspaceId = await getActiveWorkspaceId();
   await db.timeEntry.updateMany({
-    where: { date: { gte: weekStart() }, project: { workspaceId }, clockOut: { not: null } },
+    // Only promote not-yet-reviewed entries; never demote owner-approved ones.
+    where: { date: { gte: weekStart() }, project: { workspaceId }, clockOut: { not: null }, approval: "PENDING" },
     data: { approval: "FOREMAN_APPROVED" },
   });
   revalidatePath("/foreman/time");
@@ -51,8 +52,17 @@ const hhmm = () => new Date().toTimeString().slice(0, 5);
 
 /** Worker clock in / out / break toggles on a project. */
 export async function clockIn(projectId: string, userId: string) {
-  const open = await db.timeEntry.findFirst({ where: { userId, clockOut: null } });
-  if (open) return;
+  const open = await db.timeEntry.findFirst({
+    where: { userId, clockOut: null },
+    orderBy: { date: "desc" },
+  });
+  if (open) {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    if (open.date >= startOfToday) return; // already on the clock today
+    // Close out a forgotten prior-day entry before opening a new one.
+    await db.timeEntry.update({ where: { id: open.id }, data: { clockOut: open.clockIn ?? hhmm() } });
+  }
   await db.timeEntry.create({
     data: { projectId, userId, date: new Date(), clockIn: hhmm(), source: "AUTO" },
   });
@@ -64,10 +74,11 @@ export async function clockOut(entryId: string) {
   if (!entry || !entry.clockIn) return;
   const [inH, inM] = entry.clockIn.split(":").map(Number);
   const out = new Date();
-  const hours = Math.max(0, (out.getHours() * 60 + out.getMinutes() - inH * 60 - inM) / 60);
+  let mins = out.getHours() * 60 + out.getMinutes() - (inH * 60 + inM);
+  if (mins < 0) mins += 24 * 60; // shift crossed midnight
   await db.timeEntry.update({
     where: { id: entryId },
-    data: { clockOut: hhmm(), pausedAt: null, hours: Math.round(hours * 10) / 10 },
+    data: { clockOut: hhmm(), pausedAt: null, hours: Math.round((mins / 60) * 10) / 10 },
   });
   revalidatePath("/worker");
 }

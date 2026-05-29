@@ -1,17 +1,7 @@
 import { db } from "@/lib/db";
 import { getActiveWorkspaceId } from "./workspace";
+import { initials, baseRoleLabel } from "./format";
 import type { TeamMember, TeamRole } from "@/lib/demo-data";
-import { BaseRole } from "@prisma/client";
-
-const BASE_LABEL: Record<BaseRole, TeamRole> = {
-  OWNER: "Owner",
-  ESTIMATOR: "Estimator",
-  FOREMAN: "Foreman",
-  WORKER: "Crew",
-};
-
-const initials = (name: string) =>
-  name.split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
 export async function getTeam(): Promise<TeamMember[]> {
   const workspaceId = await getActiveWorkspaceId();
@@ -35,7 +25,7 @@ export async function getTeam(): Promise<TeamMember[]> {
       id: m.id,
       name: m.user.name,
       initials: initials(m.user.name),
-      role: (m.customRole?.name as TeamRole) ?? BASE_LABEL[m.role],
+      role: (m.customRole?.name as TeamRole) ?? (baseRoleLabel(m.role) as TeamRole),
       rate: m.baseHourly != null ? Number(m.baseHourly) : undefined,
       group,
       pending: m.pending || undefined,

@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { getActiveWorkspaceId } from "./workspace";
+import { dayOfSchedule } from "./dates";
 import type {
   Project,
   BudgetLine,
@@ -8,7 +9,6 @@ import type {
 } from "@/lib/demo-data";
 import type { Prisma } from "@prisma/client";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 const num = (d: Prisma.Decimal | number | null): number => (d == null ? 0 : Number(d));
 
 type ProjectRow = {
@@ -44,11 +44,7 @@ const projectSelect = {
 /** Map a DB project row to the view-model the screens consume. */
 function toViewModel(p: ProjectRow): Project {
   const dayTotal = p.durationDays ?? undefined;
-  let dayOf: number | undefined;
-  if (p.startedOn && dayTotal != null) {
-    const elapsed = Math.floor((Date.now() - p.startedOn.getTime()) / DAY_MS) + 1;
-    dayOf = Math.max(1, Math.min(dayTotal, elapsed));
-  }
+  const dayOf = dayOfSchedule(p.startedOn, p.durationDays);
   return {
     id: p.id,
     name: p.name,

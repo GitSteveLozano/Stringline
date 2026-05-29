@@ -41,7 +41,7 @@ export async function getCashSummary() {
   return { cashIn30, cashOut30, payrollThisWeek, unbilled };
 }
 
-export type Receivable = { client: string; amount: number; age: string };
+export type Receivable = { id: string; client: string; amount: number; age: string };
 
 function ageLabel(dueOn: Date | null): string {
   if (!dueOn) return "no due date";
@@ -59,6 +59,7 @@ export async function getReceivables(): Promise<Receivable[]> {
   const invoices = await db.invoice.findMany({
     where: { project: { workspaceId } },
     select: {
+      id: true,
       dueOn: true,
       project: { select: { client: { select: { name: true } } } },
       milestones: { select: { amount: true, paidOn: true } },
@@ -71,7 +72,7 @@ export async function getReceivables(): Promise<Receivable[]> {
       .filter((m) => m.paidOn == null)
       .reduce((s, m) => s + Number(m.amount), 0);
     if (balance <= 0) continue;
-    rows.push({ client: inv.project.client.name, amount: balance, age: ageLabel(inv.dueOn) });
+    rows.push({ id: inv.id, client: inv.project.client.name, amount: balance, age: ageLabel(inv.dueOn) });
   }
   // Overdue first, then soonest due.
   return rows.sort((a, b) => Number(b.age.startsWith("overdue")) - Number(a.age.startsWith("overdue")));

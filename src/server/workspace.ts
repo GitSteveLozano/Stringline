@@ -15,9 +15,8 @@ export async function getActiveWorkspaceId(): Promise<string> {
 
 /** Workspace identity + the owner's name, for the More screen header. */
 export async function getWorkspaceInfo(): Promise<{ name: string; owner: string }> {
-  const id = await getActiveWorkspaceId();
-  const ws = await db.workspace.findUnique({
-    where: { id },
+  const ws = await db.workspace.findFirst({
+    orderBy: { createdAt: "asc" },
     select: {
       name: true,
       memberships: {

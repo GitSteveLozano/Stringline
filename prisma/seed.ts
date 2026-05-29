@@ -269,7 +269,9 @@ async function main() {
             hours: perDay,
             source: "AUTO",
             approval: "FOREMAN_APPROVED",
-            anomalies: c.id === "w5" && i === 0 ? [Anomaly.OVERTIME] : [],
+            // Flag one real, seeded crew member's Monday entry for overtime
+            // (the fixture's w5 "Tomás" isn't in the team roster, so it'd drop).
+            anomalies: c.id === "w3" && i === 0 ? [Anomaly.OVERTIME] : [],
           },
         });
       }

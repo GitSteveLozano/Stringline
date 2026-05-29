@@ -1,14 +1,12 @@
 import { db } from "@/lib/db";
 import { getActiveWorkspaceId } from "./workspace";
+import { initials } from "./format";
 
 const KIND_LABEL: Record<string, string> = {
   MATERIALS: "Materials",
   TIME_OT: "Time / OT",
   EQUIPMENT: "Equipment",
 };
-
-const initials = (name: string) =>
-  name.split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
 export type ApprovalCard = {
   id: string;
