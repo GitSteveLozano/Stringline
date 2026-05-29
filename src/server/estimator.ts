@@ -51,21 +51,29 @@ export type TakeoffMeasurement = {
   confidence?: "HIGH" | "MED" | "LOW";
 };
 
-/** Full takeoff for a project: sheets (scale gate state) + measurements. */
+/** Full takeoff for a project: sheets (scale gate state) + measurements + sell rates. */
 export async function getTakeoff(projectId: string): Promise<{
   name: string;
   sheets: TakeoffSheet[];
   measurements: TakeoffMeasurement[];
+  rates: Record<string, number>;
 } | null> {
   const project = await db.project.findUnique({
     where: { id: projectId },
     select: {
+      workspaceId: true,
       name: true,
       sheets: { orderBy: { sort: "asc" } },
       measurements: { orderBy: { createdAt: "asc" } },
     },
   });
   if (!project) return null;
+
+  const scopeItems = await db.scopeItem.findMany({
+    where: { workspaceId: project.workspaceId },
+    select: { code: true, sellRate: true },
+  });
+  const rates = Object.fromEntries(scopeItems.map((s) => [s.code, Number(s.sellRate)]));
 
   return {
     name: project.name,
@@ -84,6 +92,7 @@ export async function getTakeoff(projectId: string): Promise<{
       source: m.source === "AI" ? "ai" : "manual",
       confidence: m.confidence ?? undefined,
     })),
+    rates,
   };
 }
 

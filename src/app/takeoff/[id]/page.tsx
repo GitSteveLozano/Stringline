@@ -17,6 +17,7 @@ export default async function TakeoffPage({ params }: { params: Promise<{ id: st
         projectId={id}
         sheets={takeoff.sheets}
         initialMeasurements={takeoff.measurements}
+        rates={takeoff.rates}
       />
     </DetailShell>
   );

@@ -265,3 +265,33 @@ export async function saveMeasurement(input: {
   });
   revalidatePath(`/takeoff/${input.projectId}`);
 }
+
+/**
+ * Price the saved takeoff into the project's estimate: sum each measurement's
+ * quantity × its scope sell rate and write the total to contractValue. Returns
+ * the new total so the canvas can confirm. No measurements / no rates → 0.
+ */
+export async function priceTakeoff(projectId: string): Promise<number> {
+  const workspaceId = await getActiveWorkspaceId();
+  const project = await db.project.findFirst({ where: { id: projectId, workspaceId }, select: { id: true } });
+  if (!project) return 0;
+
+  const [measurements, scopeItems] = await Promise.all([
+    db.measurement.findMany({ where: { projectId }, select: { code: true, qty: true } }),
+    db.scopeItem.findMany({ where: { workspaceId }, select: { code: true, sellRate: true } }),
+  ]);
+  const rate = new Map(scopeItems.map((s) => [s.code, Number(s.sellRate)]));
+
+  const total = Math.round(
+    measurements.reduce((sum, m) => sum + m.qty * (rate.get(m.code) ?? 0), 0)
+  );
+
+  await db.project.update({ where: { id: projectId }, data: { contractValue: total } });
+
+  revalidatePath(`/takeoff/${projectId}`);
+  revalidatePath(`/project/${projectId}`);
+  revalidatePath("/owner/projects");
+  revalidatePath("/estimator");
+  revalidatePath("/estimator/queue");
+  return total;
+}
