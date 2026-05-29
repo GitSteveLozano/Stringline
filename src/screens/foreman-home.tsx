@@ -1,18 +1,19 @@
 import { Pad, Stack, Eyebrow, H1, Card, Spread, Pill, SectionBar, Mono } from "@/components/ui";
-import { projects, crew } from "@/lib/demo-data";
+import { getForemanHome } from "@/server/foreman";
 
 // Money is hidden for the foreman (canViewCosts off) — show crew/hours/status only.
-export function ForemanHome() {
-  const sites = projects.filter((p) => p.status === "IN_PROGRESS");
-  const onClock = crew.filter((c) => c.clockedIn).length;
+export async function ForemanHome() {
+  const { sites, onClock, pings } = await getForemanHome();
 
   return (
     <>
       <Pad>
         <Stack>
-          <Eyebrow>Tuesday · May 28</Eyebrow>
+          <Eyebrow>Today on the boards</Eyebrow>
           <H1>{sites.length} sites today.</H1>
-          <div className="v2-quiet v2-body">{onClock} crew clocked in · 1 ping from the field.</div>
+          <div className="v2-quiet v2-body">
+            {onClock} crew clocked in · {pings} {pings === 1 ? "ping" : "pings"} from the field.
+          </div>
         </Stack>
       </Pad>
 
@@ -24,7 +25,6 @@ export function ForemanHome() {
       <Pad>
         <Stack>
           {sites.map((p, i) => {
-            const here = crew.filter((c) => c.project === p.id && c.clockedIn).length;
             const primary = i === 0;
             return (
               <Card key={p.id} style={primary ? { borderWidth: 3 } : undefined}>
@@ -35,16 +35,16 @@ export function ForemanHome() {
                 <div style={{ marginTop: 10 }} className="v2-row-spread">
                   <div>
                     <Mono>Crew on site</Mono>
-                    <div className="v2-h2" style={{ marginTop: 2 }}>{here}</div>
+                    <div className="v2-h2" style={{ marginTop: 2 }}>{p.crewHere}</div>
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <Mono>Day</Mono>
                     <div className="v2-h2" style={{ marginTop: 2 }}>
-                      {p.dayOf}/{p.dayTotal}
+                      {p.dayOf ?? "–"}/{p.dayTotal ?? "–"}
                     </div>
                   </div>
                 </div>
-                {i === 1 && (
+                {p.blocker && (
                   <div
                     style={{
                       marginTop: 12,
@@ -55,7 +55,7 @@ export function ForemanHome() {
                   >
                     <Mono>From the field</Mono>
                     <div className="v2-body" style={{ fontSize: 14, marginTop: 4 }}>
-                      Diego flagged: out of EPS 1.5&quot; · 12 sheets
+                      {p.blocker.who.split(" ")[0]} flagged: {p.blocker.detail}
                     </div>
                   </div>
                 )}
