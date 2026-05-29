@@ -25,7 +25,6 @@ import {
   fieldItems as fxFieldItems,
   todayLog as fxTodayLog,
   workerScope as fxWorkerScope,
-  workerWeek as fxWorkerWeek,
   workerPhotos as fxWorkerPhotos,
   approvals as fxApprovals,
   money as fxMoney,

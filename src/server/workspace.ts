@@ -12,3 +12,20 @@ export async function getActiveWorkspaceId(): Promise<string> {
   if (!ws) throw new Error("No workspace found — run `npm run db:seed`.");
   return ws.id;
 }
+
+/** Workspace identity + the owner's name, for the More screen header. */
+export async function getWorkspaceInfo(): Promise<{ name: string; owner: string }> {
+  const id = await getActiveWorkspaceId();
+  const ws = await db.workspace.findUnique({
+    where: { id },
+    select: {
+      name: true,
+      memberships: {
+        where: { role: "OWNER", customRoleId: null },
+        select: { user: { select: { name: true } } },
+        take: 1,
+      },
+    },
+  });
+  return { name: ws?.name ?? "Workspace", owner: ws?.memberships[0]?.user.name ?? "Owner" };
+}
