@@ -82,6 +82,12 @@ export async function toggleBreak(entryId: string) {
   revalidatePath("/worker");
 }
 
+/** Capture a scope-tagged field photo for the worker's current project. */
+export async function addWorkerPhoto(projectId: string, userId: string, tag = "EPS") {
+  await db.photo.create({ data: { projectId, userId, tag } });
+  revalidatePath("/worker/log");
+}
+
 // ── Owner approvals ────────────────────────────────────────────
 
 export async function decideApproval(id: string, decision: "APPROVED" | "DENIED") {

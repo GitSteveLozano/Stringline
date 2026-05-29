@@ -1,9 +1,10 @@
 import { Pad, Spread, Eyebrow, H2, IconButton, SectionBar, Mono } from "@/components/ui";
 import { Icon } from "@/components/icon";
-import { workerPhotos } from "@/lib/demo-data";
+import { getWorkerHome, getWorkerLog } from "@/server/worker";
+import { addWorkerPhoto } from "@/server/actions";
 
-export function WorkerLog() {
-  const total = workerPhotos.reduce((n, s) => n + s.items.length, 0);
+export async function WorkerLog() {
+  const [log, w] = await Promise.all([getWorkerLog(), getWorkerHome()]);
 
   return (
     <>
@@ -11,15 +12,19 @@ export function WorkerLog() {
         <Spread>
           <div>
             <Eyebrow>Log history</Eyebrow>
-            <H2 style={{ marginTop: 4 }}>{total} photos this week</H2>
+            <H2 style={{ marginTop: 4 }}>{log.total} photos this week</H2>
           </div>
-          <IconButton accent aria-label="New photo">
-            <Icon name="camera" size={20} />
-          </IconButton>
+          {w.projectId && (
+            <form action={addWorkerPhoto.bind(null, w.projectId, w.userId, "EPS")}>
+              <IconButton accent aria-label="New photo" type="submit">
+                <Icon name="camera" size={20} />
+              </IconButton>
+            </form>
+          )}
         </Spread>
       </Pad>
 
-      {workerPhotos.map((sec) => (
+      {log.sections.map((sec) => (
         <div key={sec.day}>
           <SectionBar>
             <Eyebrow>{sec.day}</Eyebrow>
