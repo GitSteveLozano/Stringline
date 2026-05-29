@@ -214,6 +214,47 @@ export async function getForemanLog(): Promise<ForemanLog | null> {
   };
 }
 
+export type ProjectLogEntry = {
+  id: string;
+  date: string;
+  weather: string;
+  foreman: string;
+  crewHours: number;
+  photos: number;
+  sqftDone: number;
+  sqftPlanned: number;
+  narrative: string;
+};
+
+/** Submitted daily logs for a project, newest first (the job journal). */
+export async function getProjectLogs(projectId: string): Promise<{ project: string | null; entries: ProjectLogEntry[] }> {
+  const workspaceId = await getActiveWorkspaceId();
+  const project = await db.project.findFirst({ where: { id: projectId, workspaceId }, select: { name: true } });
+  if (!project) return { project: null, entries: [] };
+
+  const logs = await db.dailyLog.findMany({
+    where: { projectId, submitted: true },
+    orderBy: { date: "desc" },
+  });
+  const foremanIds = [...new Set(logs.map((l) => l.foremanId))];
+  const users = await db.user.findMany({ where: { id: { in: foremanIds } }, select: { id: true, name: true } });
+  const nameById = new Map(users.map((u) => [u.id, u.name]));
+
+  const entries: ProjectLogEntry[] = logs.map((l) => ({
+    id: l.id,
+    date: l.date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
+    weather: (l.weatherJson as { summary?: string } | null)?.summary ?? "—",
+    foreman: nameById.get(l.foremanId)?.split(" ")[0] ?? "Foreman",
+    crewHours: l.crewHours ?? 0,
+    photos: l.photoCount,
+    sqftDone: l.sqftDone ?? 0,
+    sqftPlanned: l.sqftPlanned ?? 0,
+    narrative: l.narrative ?? "",
+  }));
+
+  return { project: project.name, entries };
+}
+
 const FIELD_LABEL: Record<string, string> = { BLOCKER: "Blocker", PHOTO: "Photo", NOTE: "Note" };
 
 export type FieldCard = {

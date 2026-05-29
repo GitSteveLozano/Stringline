@@ -67,11 +67,18 @@ export async function ProjectDetail({ id }: { id: string }) {
           {isLost && (
             <Pill tone="bad">Lost · {LOST_LABEL[lostReason] ?? lostReason}</Pill>
           )}
-          <Link href={`/project/${p.id}/photos`} style={{ textDecoration: "none" }}>
-            <span className="v2-mono" style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-              Site photos →
-            </span>
-          </Link>
+          <div style={{ display: "flex", gap: 16 }}>
+            <Link href={`/project/${p.id}/photos`} style={{ textDecoration: "none" }}>
+              <span className="v2-mono" style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                Site photos →
+              </span>
+            </Link>
+            <Link href={`/project/${p.id}/log`} style={{ textDecoration: "none" }}>
+              <span className="v2-mono" style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                Daily log →
+              </span>
+            </Link>
+          </div>
         </Stack>
       </Pad>
 
