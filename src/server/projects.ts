@@ -134,6 +134,7 @@ export async function getProjectDetail(id: string): Promise<ProjectDetail | null
     spent: num(b.spent),
   }));
   const changeOrders: ChangeOrderRow[] = row.changeOrders.map((c) => ({
+    id: c.id,
     number: c.number,
     description: c.description,
     delta: num(c.valueDelta),

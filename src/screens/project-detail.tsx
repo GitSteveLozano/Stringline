@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Pad, Stack, Eyebrow, H1, H3, Field, Spread, Pill, SectionBar, Mono, Button, Rule } from "@/components/ui";
 import { LIFECYCLE, money0, statusLabel, healthLabel } from "@/lib/demo-data";
 import { getProjectDetail } from "@/server/projects";
-import { advanceProjectStatus, markProjectLost } from "@/server/actions";
+import { advanceProjectStatus, markProjectLost, addChangeOrder, decideChangeOrder } from "@/server/actions";
 
 const LOST_LABEL: Record<string, string> = {
   PRICE: "Price",
@@ -30,6 +30,7 @@ export async function ProjectDetail({ id }: { id: string }) {
   const { project: p, budget, changeOrders, milestones, lostReason, lostNote } = detail;
   const isLost = lostReason != null;
   const canLose = !isLost && (p.status === "DRAFTING" || p.status === "SENT");
+  const canChangeOrder = !isLost && (p.status === "IN_PROGRESS" || p.status === "DONE");
   const acceptedCOs = changeOrders.filter((c) => c.status === "ACCEPTED");
   const coTotal = acceptedCOs.reduce((s, c) => s + c.delta, 0);
   const contract = p.contractValue + coTotal;
@@ -139,28 +140,56 @@ export async function ProjectDetail({ id }: { id: string }) {
       )}
 
       {/* Change orders */}
-      {changeOrders.length > 0 && (
+      {(changeOrders.length > 0 || canChangeOrder) && (
         <>
           <SectionBar>
             <Eyebrow>Change orders</Eyebrow>
             <Mono>{changeOrders.length}</Mono>
           </SectionBar>
           <div>
-            {changeOrders.map((c) => (
-              <div key={c.number} className="v2-row">
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <H3>CO #{c.number}</H3>
-                  <div className="v2-quiet" style={{ fontSize: 13, marginTop: 2 }}>{c.description}</div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <Mono>+{money0(c.delta)}</Mono>
-                  <div>
-                    <Pill tone={c.status === "ACCEPTED" ? "good" : undefined}>{c.status}</Pill>
+            {changeOrders.map((c) => {
+              const pending = c.status === "SENT" || c.status === "DRAFT";
+              return (
+                <div key={c.id ?? c.number} className="v2-row" style={{ flexWrap: "wrap" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <H3>CO #{c.number}</H3>
+                    <div className="v2-quiet" style={{ fontSize: 13, marginTop: 2 }}>{c.description}</div>
                   </div>
+                  <div style={{ textAlign: "right" }}>
+                    <Mono>{c.delta >= 0 ? "+" : "−"}{money0(Math.abs(c.delta))}</Mono>
+                    <div>
+                      <Pill tone={c.status === "ACCEPTED" ? "good" : c.status === "REJECTED" ? "bad" : undefined}>
+                        {c.status}
+                      </Pill>
+                    </div>
+                  </div>
+                  {pending && c.id && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, width: "100%", marginTop: 10 }}>
+                      <form action={decideChangeOrder.bind(null, c.id, "ACCEPTED")}>
+                        <Button variant="primary" type="submit" style={{ width: "100%" }}>Accept</Button>
+                      </form>
+                      <form action={decideChangeOrder.bind(null, c.id, "REJECTED")}>
+                        <Button variant="ghost" type="submit" style={{ width: "100%" }}>Reject</Button>
+                      </form>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+
+          {canChangeOrder && (
+            <Pad>
+              <form action={addChangeOrder.bind(null, id)}>
+                <Stack gap="tight">
+                  <Eyebrow>Log a change order</Eyebrow>
+                  <Field name="description" placeholder="Added soffit detail · east elevation" required />
+                  <Field name="delta" inputMode="decimal" placeholder="Value change (e.g. 4250 or -800)" required />
+                  <Button variant="ghost" type="submit" style={{ width: "100%" }}>Send change order</Button>
+                </Stack>
+              </form>
+            </Pad>
+          )}
         </>
       )}
 
