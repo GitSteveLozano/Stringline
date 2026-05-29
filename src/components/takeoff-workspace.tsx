@@ -13,7 +13,7 @@ import {
   type Measurement,
   type Confidence,
 } from "@/lib/takeoff";
-import { verifySheetScale, saveMeasurement, priceTakeoff } from "@/server/actions";
+import { verifySheetScale, saveMeasurement, priceTakeoff, saveAiTakeoff } from "@/server/actions";
 import type { TakeoffSheet, TakeoffMeasurement } from "@/server/estimator";
 
 const usd = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
@@ -97,8 +97,16 @@ export function TakeoffWorkspace({
   }
 
   function runAi() {
-    setMeasurements((m) => [...m.filter((x) => x.source !== "ai"), ...aiDraft(scale)]);
+    const draft = aiDraft(scale);
+    setMeasurements((m) => [...m.filter((x) => x.source !== "ai"), ...draft]);
     setAiRan(true);
+    if (sheets[0]) {
+      void saveAiTakeoff({
+        projectId,
+        sheetId: sheets[0].id,
+        measurements: draft.map((d) => ({ scope: d.scope, points: d.points, sf: d.sf, confidence: d.confidence })),
+      });
+    }
   }
 
   const flagged = measurements.filter((m) => m.source === "ai" && m.confidence === "LOW");

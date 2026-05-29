@@ -415,6 +415,40 @@ export async function saveMeasurement(input: {
 }
 
 /**
+ * Persist an AI-detected takeoff draft, replacing any prior AI measurements for
+ * the project (re-running AI supersedes the last draft; manual ones are kept).
+ * Returns the saved count so the canvas can confirm the draft is durable.
+ */
+export async function saveAiTakeoff(input: {
+  projectId: string;
+  sheetId: string;
+  measurements: { scope: string; points: { x: number; y: number }[]; sf: number; confidence?: "HIGH" | "MED" | "LOW" }[];
+}): Promise<number> {
+  const workspaceId = await getActiveWorkspaceId();
+  const project = await db.project.findFirst({ where: { id: input.projectId, workspaceId }, select: { id: true } });
+  if (!project) return 0;
+
+  await db.$transaction([
+    db.measurement.deleteMany({ where: { projectId: input.projectId, source: "AI" } }),
+    db.measurement.createMany({
+      data: input.measurements.map((m) => ({
+        projectId: input.projectId,
+        sheetId: input.sheetId,
+        code: m.scope,
+        qty: m.sf,
+        unit: m.scope === "CAULK" ? "lf" : "sqft",
+        pointsJson: m.points,
+        confidence: m.confidence ?? null,
+        source: "AI" as const,
+      })),
+    }),
+  ]);
+
+  revalidatePath(`/takeoff/${input.projectId}`);
+  return input.measurements.length;
+}
+
+/**
  * Price the saved takeoff into the project's estimate: sum each measurement's
  * quantity × its scope sell rate and write the total to contractValue. Returns
  * the new total so the canvas can confirm. No measurements / no rates → 0.
