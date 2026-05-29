@@ -563,3 +563,36 @@ export async function rearmGuardrail(id: string) {
   const g = await db.guardrail.findUnique({ where: { id }, select: { projectId: true } });
   if (g) revalidatePath(`/project/${g.projectId}`);
 }
+
+// ── Schedule ───────────────────────────────────────────────────
+
+/** Schedule crew to a project for a day (creates an assignment, status SENT). */
+export async function createAssignment(formData: FormData) {
+  const workspaceId = await getActiveWorkspaceId();
+  const projectId = String(formData.get("projectId") ?? "").trim();
+  const dateStr = String(formData.get("date") ?? "").trim();
+  if (!projectId || !dateStr) return;
+
+  // Guard the project belongs to this workspace.
+  const owned = await db.project.findFirst({ where: { id: projectId, workspaceId }, select: { id: true } });
+  if (!owned) return;
+
+  const scope = String(formData.get("scope") ?? "").trim() || null;
+  const sqftRaw = parseInt(String(formData.get("sqft") ?? ""), 10);
+  const hrRaw = parseFloat(String(formData.get("plannedHr") ?? ""));
+  const crewUserIds = formData.getAll("crew").map(String).filter(Boolean);
+
+  await db.assignment.create({
+    data: {
+      projectId,
+      date: new Date(`${dateStr}T07:30:00`),
+      scope,
+      sqft: Number.isFinite(sqftRaw) ? sqftRaw : null,
+      plannedHr: Number.isFinite(hrRaw) ? hrRaw : null,
+      crewUserIds,
+      status: "SENT",
+    },
+  });
+  revalidatePath("/schedule");
+  redirect("/schedule");
+}
