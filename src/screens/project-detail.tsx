@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { Pad, Stack, Eyebrow, H1, H3, Spread, Pill, SectionBar, Mono, Button, Rule } from "@/components/ui";
 import { LIFECYCLE, money0, statusLabel, healthLabel } from "@/lib/demo-data";
 import { getProjectDetail } from "@/server/projects";
+import { advanceProjectStatus } from "@/server/actions";
 
 /** Lifecycle state machine — same screen across Drafting → Paid; content shifts with status. */
 export async function ProjectDetail({ id }: { id: string }) {
@@ -172,10 +174,36 @@ export async function ProjectDetail({ id }: { id: string }) {
       <Rule />
       <Pad>
         <Stack>
-          {p.status === "DRAFTING" && <Button variant="primary">Send proposal to client</Button>}
-          {p.status === "SENT" && <Button variant="primary">Mark accepted</Button>}
-          {p.status === "IN_PROGRESS" && <Button variant="primary">Open today&apos;s log</Button>}
-          {p.status === "DONE" && <Button variant="primary">Generate invoice</Button>}
+          {p.status === "DRAFTING" && (
+            <form action={advanceProjectStatus.bind(null, id, "SENT")}>
+              <Button variant="primary" type="submit" style={{ width: "100%" }}>Send proposal to client</Button>
+            </form>
+          )}
+          {p.status === "SENT" && (
+            <form action={advanceProjectStatus.bind(null, id, "ACCEPTED")}>
+              <Button variant="primary" type="submit" style={{ width: "100%" }}>Mark accepted</Button>
+            </form>
+          )}
+          {p.status === "ACCEPTED" && (
+            <form action={advanceProjectStatus.bind(null, id, "IN_PROGRESS")}>
+              <Button variant="primary" type="submit" style={{ width: "100%" }}>Start work</Button>
+            </form>
+          )}
+          {p.status === "IN_PROGRESS" && (
+            <>
+              <Link href="/foreman/log" style={{ textDecoration: "none" }}>
+                <Button variant="primary" style={{ width: "100%" }}>Open today&apos;s log</Button>
+              </Link>
+              <form action={advanceProjectStatus.bind(null, id, "DONE")}>
+                <Button variant="ghost" type="submit" style={{ width: "100%" }}>Mark complete</Button>
+              </form>
+            </>
+          )}
+          {p.status === "DONE" && (
+            <form action={advanceProjectStatus.bind(null, id, "PAID")}>
+              <Button variant="primary" type="submit" style={{ width: "100%" }}>Generate invoice</Button>
+            </form>
+          )}
         </Stack>
       </Pad>
     </>
