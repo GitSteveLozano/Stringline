@@ -526,3 +526,15 @@ export async function markAllNotificationsRead() {
   await db.notification.updateMany({ where: { userId: me.id, read: false }, data: { read: true } });
   revalidatePath("/notifications");
 }
+
+// ── Dispatch (equipment) ───────────────────────────────────────
+
+/** Mark a dispatched asset as returned. */
+export async function returnDispatch(id: string) {
+  const workspaceId = await getActiveWorkspaceId();
+  await db.dispatch.updateMany({
+    where: { id, asset: { workspaceId } },
+    data: { status: "RETURNED" },
+  });
+  revalidatePath("/dispatch");
+}
