@@ -1,15 +1,15 @@
 import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill } from "@/components/ui";
-import { money, money0 } from "@/lib/demo-data";
-import { getReceivables } from "@/server/money";
+import { money0 } from "@/lib/demo-data";
+import { getReceivables, getCashSummary } from "@/server/money";
 
 export async function OwnerMoney() {
-  const ar = await getReceivables();
-  const net = money.cashIn30 - money.cashOut30;
+  const [ar, cash] = await Promise.all([getReceivables(), getCashSummary()]);
+  const net = cash.cashIn30 - cash.cashOut30;
   const tiles = [
-    { label: "Cash in · 30d", value: money0(money.cashIn30) },
-    { label: "Cash out · 30d", value: money0(money.cashOut30) },
-    { label: "Payroll · this wk", value: money0(money.payrollThisWeek) },
-    { label: "Unbilled", value: money0(money.unbilled) },
+    { label: "Cash in · 30d", value: money0(cash.cashIn30) },
+    { label: "Cash out · 30d", value: money0(cash.cashOut30) },
+    { label: "Payroll · this wk", value: money0(cash.payrollThisWeek) },
+    { label: "Unbilled", value: money0(cash.unbilled) },
   ];
 
   return (

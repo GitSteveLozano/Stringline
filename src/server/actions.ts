@@ -107,3 +107,25 @@ export async function verifySheetScale(sheetId: string) {
   await db.sheet.update({ where: { id: sheetId }, data: { scaleVerifiedAt: new Date() } });
   revalidatePath("/estimator");
 }
+
+/** Persist a manually-drawn takeoff measurement. */
+export async function saveMeasurement(input: {
+  projectId: string;
+  sheetId: string;
+  scope: string;
+  points: { x: number; y: number }[];
+  sf: number;
+}) {
+  await db.measurement.create({
+    data: {
+      projectId: input.projectId,
+      sheetId: input.sheetId,
+      code: input.scope,
+      qty: input.sf,
+      unit: "sqft",
+      pointsJson: input.points,
+      source: "MANUAL",
+    },
+  });
+  revalidatePath(`/takeoff/${input.projectId}`);
+}

@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { Pad, Card, Spread, Eyebrow, SectionBar, Mono, Row, Pill } from "@/components/ui";
 import { Icon } from "@/components/icon";
-import { approvals } from "@/lib/demo-data";
 import { getTeam } from "@/server/team";
+import { getPendingApprovalCount } from "@/server/approvals";
 
 export async function OwnerTeam() {
-  const team = await getTeam();
+  const [team, pendingApprovals] = await Promise.all([getTeam(), getPendingApprovalCount()]);
   const office = team.filter((m) => m.group === "Office");
   const field = team.filter((m) => m.group === "Field");
 
@@ -20,7 +20,7 @@ export async function OwnerTeam() {
               <Icon name="chevron" size={18} />
             </Spread>
             <div className="v2-h2" style={{ marginTop: 8 }}>
-              {approvals.length} pending
+              {pendingApprovals} pending
             </div>
           </Card>
         </Link>
