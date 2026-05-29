@@ -50,9 +50,7 @@ export async function Schedule() {
           <div className="v2-quiet v2-body">
             {summary.assignments} {summary.assignments === 1 ? "assignment" : "assignments"} · {summary.confirmed} confirmed.
           </div>
-          <Link href="/schedule/new" style={{ textDecoration: "none" }}>
-            <Button variant="primary">+ Assign crew</Button>
-          </Link>
+          <Button href="/schedule/new" variant="primary">+ Assign crew</Button>
         </Stack>
       </Pad>
 

@@ -60,9 +60,7 @@ export async function Dispatch() {
               View equipment yard →
             </span>
           </Link>
-          <Link href="/dispatch/new" style={{ textDecoration: "none" }}>
-            <Button variant="primary">+ Dispatch gear</Button>
-          </Link>
+          <Button href="/dispatch/new" variant="primary">+ Dispatch gear</Button>
         </Stack>
       </Pad>
 
@@ -100,7 +98,7 @@ export async function Dispatch() {
             d.dailyValue > 0 ? money0(d.dailyValue) : "—",
             d.status !== "RETURNED" ? (
               <form key="r" action={returnDispatch.bind(null, d.id)}>
-                <Button variant="ghost" type="submit" style={{ padding: "6px 12px", fontSize: 12 }}>Return</Button>
+                <Button variant="ghost" size="sm" type="submit">Return</Button>
               </form>
             ) : "",
           ],

@@ -22,9 +22,7 @@ export async function OwnerProjects() {
   return (
     <>
       <Pad>
-        <Link href="/project/new" style={{ textDecoration: "none" }}>
-          <Button variant="primary" style={{ width: "100%" }}>+ New project</Button>
-        </Link>
+        <Button href="/project/new" variant="primary">+ New project</Button>
       </Pad>
 
       {/* Desktop: one dense table of every project */}

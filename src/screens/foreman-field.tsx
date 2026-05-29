@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Pad, Stack, Card, Spread, Eyebrow, Mono, Pill, Button } from "@/components/ui";
 import { getForemanField, type FieldCard } from "@/server/foreman";
 import { resolveFieldReport } from "@/server/actions";
@@ -46,9 +45,7 @@ export async function ForemanField() {
   return (
     <Pad>
       <Stack>
-        <Link href="/foreman/field/new" style={{ textDecoration: "none" }}>
-          <Button variant="primary" style={{ width: "100%" }}>+ Log report</Button>
-        </Link>
+        <Button href="/foreman/field/new" variant="primary">+ Log report</Button>
         {open.map(card)}
         {resolved.length > 0 && (
           <>

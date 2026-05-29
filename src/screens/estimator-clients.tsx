@@ -17,9 +17,7 @@ export async function EstimatorClients() {
           <div className="v2-quiet v2-body">
             {leadCount} {leadCount === 1 ? "lead" : "leads"} not yet won.
           </div>
-          <Link href="/client/new" style={{ textDecoration: "none" }}>
-            <Button variant="primary">+ New client</Button>
-          </Link>
+          <Button href="/client/new" variant="primary">+ New client</Button>
         </Stack>
       </Pad>
 
