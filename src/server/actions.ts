@@ -730,3 +730,22 @@ export async function createFieldReport(formData: FormData) {
   revalidatePath("/foreman");
   redirect("/foreman/field");
 }
+
+/** Edit an existing client. */
+export async function updateClient(id: string, formData: FormData) {
+  const workspaceId = await getActiveWorkspaceId();
+  const owned = await db.client.findFirst({ where: { id, workspaceId }, select: { id: true } });
+  if (!owned) return;
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return;
+  const kindRaw = String(formData.get("kind") ?? "BUILDER").toUpperCase();
+  const kind = CLIENT_KINDS.includes(kindRaw) ? kindRaw : "BUILDER";
+  const email = String(formData.get("email") ?? "").trim() || null;
+  const phone = String(formData.get("phone") ?? "").trim() || null;
+  const isLead = formData.get("isLead") === "on";
+
+  await db.client.update({ where: { id }, data: { name, kind, email, phone, isLead } });
+  revalidatePath(`/client/${id}`);
+  revalidatePath("/estimator/clients");
+  redirect(`/client/${id}`);
+}
