@@ -678,3 +678,25 @@ export async function createMember(formData: FormData) {
   revalidatePath("/owner/team");
   redirect("/owner/team");
 }
+
+// ── Field intake ───────────────────────────────────────────────
+
+/** Log a field report (blocker / note / photo) from the crew/foreman. */
+export async function createFieldReport(formData: FormData) {
+  const me = await getCurrentUser();
+  if (!me) return;
+  const workspaceId = await getActiveWorkspaceId();
+  const projectId = String(formData.get("projectId") ?? "").trim();
+  const detail = String(formData.get("detail") ?? "").trim();
+  if (!projectId || !detail) return;
+  const kindRaw = String(formData.get("kind") ?? "NOTE").toUpperCase();
+  const kind = (["BLOCKER", "PHOTO", "NOTE"].includes(kindRaw) ? kindRaw : "NOTE") as "BLOCKER" | "PHOTO" | "NOTE";
+
+  const owned = await db.project.findFirst({ where: { id: projectId, workspaceId }, select: { id: true } });
+  if (!owned) return;
+
+  await db.fieldReport.create({ data: { projectId, userId: me.id, kind, detail } });
+  revalidatePath("/foreman/field");
+  revalidatePath("/foreman");
+  redirect("/foreman/field");
+}
