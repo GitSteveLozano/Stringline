@@ -395,60 +395,89 @@ export async function verifySheetScale(sheetId: string) {
   revalidatePath("/estimator");
 }
 
-/** Persist a manually-drawn takeoff measurement. */
+/** Persist a manually-drawn takeoff measurement; returns the new row id. */
 export async function saveMeasurement(input: {
   projectId: string;
   sheetId: string;
   scope: string;
   points: { x: number; y: number }[];
   sf: number;
-}) {
-  await db.measurement.create({
+}): Promise<string> {
+  const created = await db.measurement.create({
     data: {
       projectId: input.projectId,
       sheetId: input.sheetId,
       code: input.scope,
       qty: input.sf,
-      unit: "sqft",
+      unit: input.scope === "CAULK" ? "lf" : "sqft",
       pointsJson: input.points,
       source: "MANUAL",
     },
+    select: { id: true },
   });
   revalidatePath(`/takeoff/${input.projectId}`);
+  return created.id;
 }
+
+/** Delete a takeoff measurement (workspace-scoped via its project). */
+export async function deleteMeasurement(id: string) {
+  const workspaceId = await getActiveWorkspaceId();
+  const measurement = await db.measurement.findFirst({
+    where: { id, project: { workspaceId } },
+    select: { projectId: true },
+  });
+  if (!measurement) return;
+  await db.measurement.delete({ where: { id } });
+  revalidatePath(`/takeoff/${measurement.projectId}`);
+}
+
+export type SavedMeasurement = {
+  id: string;
+  scope: string;
+  points: { x: number; y: number }[];
+  sf: number;
+  confidence?: "HIGH" | "MED" | "LOW";
+};
 
 /**
  * Persist an AI-detected takeoff draft, replacing any prior AI measurements for
  * the project (re-running AI supersedes the last draft; manual ones are kept).
- * Returns the saved count so the canvas can confirm the draft is durable.
+ * Returns the persisted rows (with ids) so the canvas can reconcile its state
+ * and offer per-region delete.
  */
 export async function saveAiTakeoff(input: {
   projectId: string;
   sheetId: string;
   measurements: { scope: string; points: { x: number; y: number }[]; sf: number; confidence?: "HIGH" | "MED" | "LOW" }[];
-}): Promise<number> {
+}): Promise<SavedMeasurement[]> {
   const workspaceId = await getActiveWorkspaceId();
   const project = await db.project.findFirst({ where: { id: input.projectId, workspaceId }, select: { id: true } });
-  if (!project) return 0;
+  if (!project) return [];
 
-  await db.$transaction([
-    db.measurement.deleteMany({ where: { projectId: input.projectId, source: "AI" } }),
-    db.measurement.createMany({
-      data: input.measurements.map((m) => ({
-        projectId: input.projectId,
-        sheetId: input.sheetId,
-        code: m.scope,
-        qty: m.sf,
-        unit: m.scope === "CAULK" ? "lf" : "sqft",
-        pointsJson: m.points,
-        confidence: m.confidence ?? null,
-        source: "AI" as const,
-      })),
-    }),
-  ]);
+  const created = await db.$transaction(async (tx) => {
+    await tx.measurement.deleteMany({ where: { projectId: input.projectId, source: "AI" } });
+    const rows: SavedMeasurement[] = [];
+    for (const m of input.measurements) {
+      const row = await tx.measurement.create({
+        data: {
+          projectId: input.projectId,
+          sheetId: input.sheetId,
+          code: m.scope,
+          qty: m.sf,
+          unit: m.scope === "CAULK" ? "lf" : "sqft",
+          pointsJson: m.points,
+          confidence: m.confidence ?? null,
+          source: "AI",
+        },
+        select: { id: true },
+      });
+      rows.push({ id: row.id, scope: m.scope, points: m.points, sf: m.sf, confidence: m.confidence });
+    }
+    return rows;
+  });
 
   revalidatePath(`/takeoff/${input.projectId}`);
-  return input.measurements.length;
+  return created;
 }
 
 /**
