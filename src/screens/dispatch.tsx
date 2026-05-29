@@ -60,6 +60,9 @@ export async function Dispatch() {
               View equipment yard →
             </span>
           </Link>
+          <Link href="/dispatch/new" style={{ textDecoration: "none" }}>
+            <Button variant="primary">+ Dispatch gear</Button>
+          </Link>
         </Stack>
       </Pad>
 

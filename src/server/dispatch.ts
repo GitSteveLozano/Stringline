@@ -71,3 +71,30 @@ export async function getDispatchBoard() {
     },
   };
 }
+
+/** Assets (with available qty) + active projects for the new-dispatch form. */
+export async function getDispatchResources(): Promise<{
+  assets: { id: string; name: string; available: number }[];
+  projects: { id: string; name: string }[];
+}> {
+  const workspaceId = await getActiveWorkspaceId();
+  const [assets, projects] = await Promise.all([
+    db.asset.findMany({
+      where: { workspaceId },
+      select: { id: true, name: true, ownedQty: true, dispatches: { select: { qty: true, status: true } } },
+      orderBy: { name: "asc" },
+    }),
+    db.project.findMany({
+      where: { workspaceId, status: { in: ["ACCEPTED", "IN_PROGRESS"] } },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
+  return {
+    assets: assets.map((a) => {
+      const out = a.dispatches.filter((d) => d.status !== "RETURNED").reduce((s, d) => s + d.qty, 0);
+      return { id: a.id, name: a.name, available: Math.max(0, a.ownedQty - out) };
+    }),
+    projects,
+  };
+}
