@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill } from "@/components/ui";
+import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill, Button } from "@/components/ui";
 import { getTakeoffs } from "@/server/estimator";
 
 export async function EstimatorHome() {
@@ -14,6 +14,9 @@ export async function EstimatorHome() {
           <div className="v2-quiet v2-body">
             {finishedAi} plan {finishedAi === 1 ? "set" : "sets"} finished auto-takeoff · review before it goes out.
           </div>
+          <Link href="/project/new" style={{ textDecoration: "none" }}>
+            <Button variant="primary" style={{ width: "100%" }}>+ New bid</Button>
+          </Link>
         </Stack>
       </Pad>
 

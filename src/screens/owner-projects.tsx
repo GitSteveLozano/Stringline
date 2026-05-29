@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SectionBar, Mono, Eyebrow, Row, Pill } from "@/components/ui";
+import { SectionBar, Mono, Eyebrow, Row, Pill, Button, Pad } from "@/components/ui";
 import { healthLabel, type Project, type ProjectHealth } from "@/lib/demo-data";
 import { listProjects } from "@/server/projects";
 
@@ -21,6 +21,11 @@ export async function OwnerProjects() {
   const projects = await listProjects();
   return (
     <>
+      <Pad>
+        <Link href="/project/new" style={{ textDecoration: "none" }}>
+          <Button variant="primary" style={{ width: "100%" }}>+ New project</Button>
+        </Link>
+      </Pad>
       {BUCKETS.map((b) => {
         const items = projects.filter(b.match);
         if (items.length === 0) return null;

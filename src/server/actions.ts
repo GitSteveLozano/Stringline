@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getActiveWorkspaceId } from "./workspace";
 import { weekStart } from "./dates";
@@ -114,6 +115,61 @@ export async function decideApproval(id: string, decision: "APPROVED" | "DENIED"
 }
 
 // ── Project lifecycle ──────────────────────────────────────────
+
+const CLIENT_KINDS = ["BUILDER", "GC", "OWNER", "ARCHITECT"];
+
+/**
+ * Create a new bid (DRAFTING project). The client is either an existing one
+ * (clientId) or created on the fly from a typed name; a new client name wins
+ * over a selected one. Redirects into the fresh project's detail screen.
+ */
+export async function createProject(formData: FormData) {
+  const workspaceId = await getActiveWorkspaceId();
+
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return; // the form marks name required; ignore empty submits
+
+  const address = String(formData.get("address") ?? "").trim() || null;
+  const rawValue = String(formData.get("contractValue") ?? "").replace(/[^0-9.]/g, "");
+  const contractValue = rawValue ? Number(rawValue) : null;
+
+  // Resolve the client: a typed new name takes precedence over the picker.
+  const newClientName = String(formData.get("newClient") ?? "").trim();
+  let clientId = String(formData.get("clientId") ?? "").trim();
+  if (newClientName) {
+    const kindRaw = String(formData.get("clientKind") ?? "BUILDER").toUpperCase();
+    const kind = CLIENT_KINDS.includes(kindRaw) ? kindRaw : "BUILDER";
+    const client = await db.client.create({ data: { workspaceId, name: newClientName, kind } });
+    clientId = client.id;
+  } else if (clientId) {
+    // Guard against picking a client from another workspace.
+    const owned = await db.client.findFirst({ where: { id: clientId, workspaceId }, select: { id: true } });
+    if (!owned) return;
+  } else {
+    return; // neither an existing nor a new client — nothing to attach to
+  }
+
+  const project = await db.project.create({
+    data: {
+      workspaceId,
+      clientId,
+      name,
+      address,
+      contractValue,
+      status: "DRAFTING",
+      health: "PENDING",
+    },
+    select: { id: true },
+  });
+
+  revalidatePath("/owner");
+  revalidatePath("/owner/projects");
+  revalidatePath("/estimator");
+  revalidatePath("/estimator/queue");
+  revalidatePath("/estimator/clients");
+  redirect(`/project/${project.id}`);
+}
+
 
 /**
  * Advance a project one step along the lifecycle (Drafting → … → Paid).
