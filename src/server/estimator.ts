@@ -221,3 +221,67 @@ export async function getScopeLibrary(): Promise<ScopeRow[]> {
     };
   });
 }
+
+export type ClientProfile = {
+  id: string;
+  name: string;
+  kind: string;
+  isLead: boolean;
+  email: string | null;
+  phone: string | null;
+  projects: {
+    id: string;
+    name: string;
+    status: import("@prisma/client").ProjectStatus;
+    health: import("@prisma/client").ProjectHealth;
+    value: number;
+  }[];
+  summary: { projectCount: number; pipelineValue: number; wonValue: number };
+};
+
+const OPEN_BID: import("@prisma/client").ProjectStatus[] = ["DRAFTING", "SENT"];
+const WON: import("@prisma/client").ProjectStatus[] = ["ACCEPTED", "IN_PROGRESS", "DONE", "PAID"];
+
+/** A single client with their contact info, projects, and pipeline/won totals. */
+export async function getClientProfile(id: string): Promise<ClientProfile | null> {
+  const workspaceId = await getActiveWorkspaceId();
+  const c = await db.client.findFirst({
+    where: { id, workspaceId },
+    select: {
+      id: true,
+      name: true,
+      kind: true,
+      isLead: true,
+      email: true,
+      phone: true,
+      projects: {
+        orderBy: { createdAt: "desc" },
+        select: { id: true, name: true, status: true, health: true, contractValue: true },
+      },
+    },
+  });
+  if (!c) return null;
+
+  const projects = c.projects.map((p) => ({
+    id: p.id,
+    name: p.name,
+    status: p.status,
+    health: p.health,
+    value: Number(p.contractValue ?? 0),
+  }));
+
+  return {
+    id: c.id,
+    name: c.name,
+    kind: c.kind,
+    isLead: c.isLead,
+    email: c.email,
+    phone: c.phone,
+    projects,
+    summary: {
+      projectCount: projects.length,
+      pipelineValue: projects.filter((p) => OPEN_BID.includes(p.status)).reduce((s, p) => s + p.value, 0),
+      wonValue: projects.filter((p) => WON.includes(p.status)).reduce((s, p) => s + p.value, 0),
+    },
+  };
+}
