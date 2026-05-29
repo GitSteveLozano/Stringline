@@ -425,6 +425,7 @@ body {
 .v2-tile {
   border: 2px solid var(--v2-ink);
   background: var(--v2-sand);
+  color: var(--v2-ink);
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -658,11 +659,16 @@ body {
   .v2-stat-grid {
     grid-template-columns: repeat(4, 1fr);
   }
+  /* Balanced two-column flow: each section stays whole (break-inside: avoid)
+     and columns balance by height, which handles a variable number of
+     uneven sections (e.g. pipeline stages) better than a row-by-row grid. */
   .v2-cols {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    align-items: start;
+    column-count: 2;
+    column-gap: 24px;
+  }
+  .v2-cols > * {
+    break-inside: avoid;
+    margin-bottom: 24px;
   }
   /* Drill-in shells (project detail, takeoff) read as a wide document,
      not a phone strip, once there's room. */
