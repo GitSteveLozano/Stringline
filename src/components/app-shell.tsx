@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Screen, AppBar, IconButton } from "@/components/ui";
 import { Icon } from "@/components/icon";
 import { WearingControl } from "@/components/wearing";
+import { signOut } from "@/server/auth-actions";
 import { TABS, roleMeta, type Role } from "@/lib/personas";
 import { cn } from "@/lib/cn";
 
@@ -12,10 +13,12 @@ import { cn } from "@/lib/cn";
 export function AppShell({
   role,
   title,
+  roles,
   children,
 }: {
   role: Role;
   title: string;
+  roles?: Role[];
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -33,8 +36,10 @@ export function AppShell({
           title={title}
           trailing={
             <>
-              <WearingControl role={role} />
-              <IconButton aria-label="Menu">≡</IconButton>
+              <WearingControl role={role} roles={roles} />
+              <form action={signOut}>
+                <IconButton aria-label="Sign out" type="submit">⏻</IconButton>
+              </form>
             </>
           }
         />

@@ -1,10 +1,13 @@
 import { db } from "@/lib/db";
+import { getCurrentUser } from "./auth";
 
 /**
- * Resolve the active workspace. Single-tenant for now — returns the demo
- * workspace. When subdomain/auth routing lands, this reads from the session.
+ * Resolve the active workspace from the signed-in user's membership.
+ * Falls back to the first workspace (dev/unauthenticated convenience).
  */
 export async function getActiveWorkspaceId(): Promise<string> {
+  const me = await getCurrentUser();
+  if (me) return me.workspaceId;
   const ws = await db.workspace.findFirst({
     orderBy: { createdAt: "asc" },
     select: { id: true },

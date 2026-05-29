@@ -30,8 +30,15 @@ import {
   money as fxMoney,
 } from "../src/lib/demo-data";
 import { SCOPES, demoSheets, aiDraft } from "../src/lib/takeoff";
+import { randomBytes, scryptSync } from "node:crypto";
 
 const db = new PrismaClient();
+
+// Matches verifyPassword() in src/server/auth.ts (salt$hash, scrypt keylen 64).
+function hashPassword(pw: string): string {
+  const salt = randomBytes(16).toString("hex");
+  return `${salt}$${scryptSync(pw, salt, 64).toString("hex")}`;
+}
 
 const SUBDOMAIN = "davis";
 
@@ -115,16 +122,19 @@ async function main() {
     Crew: { base: BaseRole.WORKER },
   };
 
+  // Credentials: office signs in with email + password "demo"; crew use a
+  // phone + SMS code. Phones are deterministic so the demo is reproducible.
   const userByName = new Map<string, string>();
+  let phoneSeq = 100;
   for (const m of fxTeam) {
     const spec = roleSpec[m.role];
+    const isOffice = m.group === "Office";
     const user = await db.user.create({
       data: {
         name: m.name,
-        email:
-          m.group === "Office"
-            ? `${m.name.split(" ")[0].toLowerCase()}@davisstucco.com`
-            : null,
+        email: isOffice ? `${m.name.split(" ")[0].toLowerCase()}@davisstucco.com` : null,
+        phone: isOffice ? null : `+1403555${phoneSeq++}`,
+        passwordHash: isOffice ? hashPassword("demo") : null,
         memberships: {
           create: {
             workspaceId: ws.id,
@@ -137,6 +147,14 @@ async function main() {
       },
     });
     userByName.set(m.name, user.id);
+  }
+
+  // The owner wears every hat (solo-operator demo) — add the other three
+  // memberships AFTER the roster so the dedicated crew stay "first" for the
+  // role-scoped queries (worker = Marcus, foreman = Ana, estimator = Maya).
+  const ownerId = userByName.get("Sarah Davis")!;
+  for (const role of [BaseRole.ESTIMATOR, BaseRole.FOREMAN, BaseRole.WORKER]) {
+    await db.membership.create({ data: { userId: ownerId, workspaceId: ws.id, role } });
   }
 
   // ── Clients (unique by project client name) ──────────────────
@@ -478,6 +496,10 @@ async function main() {
     transactions: await db.transaction.count(),
   };
   console.log("Seed complete:", counts);
+  console.log("\nDemo sign-in:");
+  console.log("  Office: sarah@davisstucco.com / demo  (owner — wears all four hats)");
+  console.log("          maya@davisstucco.com / demo   (estimator)");
+  console.log("  Crew:   phone +1403555102 (Marcus, worker) — code shown on screen");
 }
 
 main()

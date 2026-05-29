@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Pad, Stack, Eyebrow, H1, Card, Mono } from "@/components/ui";
+import { Pad, Stack, Eyebrow, H1, Card, Mono, Button } from "@/components/ui";
 import { Icon } from "@/components/icon";
+import { devSignIn } from "@/server/auth-actions";
 
 export function MagicSent() {
   return (
@@ -20,7 +21,10 @@ export function MagicSent() {
         </Card>
 
         <Stack>
-          <button type="button" className="v2-btn">Resend link</button>
+          {/* No email provider in dev — this button stands in for the link. */}
+          <form action={devSignIn.bind(null, "owner")}>
+            <Button variant="primary" type="submit" style={{ width: "100%" }}>Open the link (dev)</Button>
+          </form>
           <Link href="/signin" className="v2-btn ghost">
             Use a password instead
           </Link>

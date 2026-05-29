@@ -1,15 +1,15 @@
 import { AuthShell } from "@/components/auth-shell";
-import { SignIn } from "@/screens/auth/sign-in";
+import { PhoneSignIn } from "@/screens/auth/phone-sign-in";
 
-export default async function SignInPage({
+export default async function PhoneSignInPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
   return (
-    <AuthShell>
-      <SignIn error={error} />
+    <AuthShell dark>
+      <PhoneSignIn error={error} />
     </AuthShell>
   );
 }
