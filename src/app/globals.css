@@ -563,17 +563,56 @@ body {
   display: none;
 }
 .v2-sidebar-brand {
-  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  height: 64px;
+  border-bottom: 2px solid var(--v2-ink);
+}
+.v2-sidebar-wordmark {
   font-family: var(--v2-font-tight);
   font-weight: 900;
   font-size: 20px;
   letter-spacing: -0.01em;
-  border-bottom: 2px solid var(--v2-ink);
 }
 .v2-sidebar-nav {
   display: flex;
   flex-direction: column;
   padding: 8px 0;
+  flex: 1;
+  min-height: 0;
+}
+/* Account / settings footer pinned to the bottom of the sidebar */
+.v2-sidebar-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 20px;
+  border-top: 2px solid var(--v2-ink);
+  text-decoration: none;
+  color: inherit;
+}
+.v2-sidebar-foot:hover {
+  background: var(--v2-sand-2);
+}
+.v2-sidebar-foot-role {
+  font-family: var(--v2-font-tight);
+  font-weight: 800;
+  font-size: 15px;
+}
+.v2-sidebar-foot-sub {
+  font-family: var(--v2-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--v2-ink-3);
+}
+.v2-app.dark .v2-sidebar-foot {
+  border-color: var(--v2-sand-2);
+}
+.v2-app.dark .v2-sidebar-foot:hover {
+  background: var(--v2-ink-2);
 }
 .v2-sidebar-tab {
   display: flex;

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { IconButton } from "@/components/ui";
 import { Icon } from "@/components/icon";
+import { Logo } from "@/components/auth-shell";
 import { WearingControl } from "@/components/wearing";
 import { signOut } from "@/server/auth-actions";
 import { TABS, roleMeta, type Role } from "@/lib/personas";
@@ -43,7 +44,10 @@ export function AppShell({
     <div className={cn("v2", "v2-screen", "v2-app", meta.dark && "dark", role === "worker" && "phone-only")}>
       {/* Desktop sidebar */}
       <aside className="v2-sidebar">
-        <div className="v2-sidebar-brand">Stringline</div>
+        <div className="v2-sidebar-brand">
+          <Logo size={30} />
+          <span className="v2-sidebar-wordmark">Stringline</span>
+        </div>
         <nav className="v2-sidebar-nav" aria-label={`${meta.label} navigation`}>
           {tabs.map((t) => (
             <Link
@@ -57,6 +61,10 @@ export function AppShell({
             </Link>
           ))}
         </nav>
+        <Link href="/settings" className="v2-sidebar-foot">
+          <span className="v2-sidebar-foot-role">{meta.label}</span>
+          <span className="v2-sidebar-foot-sub">{meta.blurb}</span>
+        </Link>
       </aside>
 
       <div className="v2-shell-main">
