@@ -36,7 +36,7 @@ export async function getDispatchBoard() {
   });
 
   const projIds = [...new Set(rows.map((r) => r.projectId))];
-  const projects = await db.project.findMany({ where: { id: { in: projIds } }, select: { id: true, name: true } });
+  const projects = await db.project.findMany({ where: { id: { in: projIds }, workspaceId }, select: { id: true, name: true } });
   const nameById = new Map(projects.map((p) => [p.id, p.name]));
 
   const now = Date.now();
@@ -54,7 +54,7 @@ export async function getDispatchBoard() {
       status,
       sentOn: dayLabel(r.sentOn),
       dueBack: r.dueBack ? dayLabel(r.dueBack) : null,
-      overdueDays: overdue ? Math.max(1, Math.round((now - r.dueBack!.getTime()) / 86_400_000)) : 0,
+      overdueDays: overdue ? Math.floor((now - r.dueBack!.getTime()) / 86_400_000) : 0,
       dailyValue: Number(r.asset.dailyRate) * r.qty,
     };
   });

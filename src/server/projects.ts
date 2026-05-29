@@ -80,7 +80,8 @@ export async function listProjects(): Promise<Project[]> {
 }
 
 export async function getProject(id: string): Promise<Project | null> {
-  const row = await db.project.findUnique({ where: { id }, select: projectSelect });
+  const workspaceId = await getActiveWorkspaceId();
+  const row = await db.project.findFirst({ where: { id, workspaceId }, select: projectSelect });
   return row ? toViewModel(row) : null;
 }
 
@@ -129,8 +130,9 @@ export type ProjectDetail = {
 };
 
 export async function getProjectDetail(id: string): Promise<ProjectDetail | null> {
-  const row = await db.project.findUnique({
-    where: { id },
+  const workspaceId = await getActiveWorkspaceId();
+  const row = await db.project.findFirst({
+    where: { id, workspaceId },
     select: {
       ...projectSelect,
       lostReason: true,
