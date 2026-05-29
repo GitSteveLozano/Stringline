@@ -83,6 +83,13 @@ export async function ProjectDetail({ id }: { id: string }) {
                 Edit →
               </span>
             </Link>
+            {(p.status === "ACCEPTED" || p.status === "IN_PROGRESS" || p.status === "DONE") && (
+              <Link href={`/project/${p.id}/bill`} style={{ textDecoration: "none" }}>
+                <span className="v2-mono" style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  Bill a draw →
+                </span>
+              </Link>
+            )}
           </div>
         </Stack>
       </Pad>

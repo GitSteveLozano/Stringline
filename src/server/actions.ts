@@ -766,3 +766,38 @@ export async function updateProject(id: string, formData: FormData) {
   revalidatePath("/estimator/queue");
   redirect(`/project/${id}`);
 }
+
+/**
+ * Bill a progress draw: create an invoice for a % of the contract (a milestone).
+ * Works for accepted/in-progress/done projects; multiple draws = multiple
+ * invoices, all summed into A/R.
+ */
+export async function billDraw(projectId: string, formData: FormData) {
+  const workspaceId = await getActiveWorkspaceId();
+  const project = await db.project.findFirst({ where: { id: projectId, workspaceId }, select: { status: true } });
+  if (!project || !["ACCEPTED", "IN_PROGRESS", "DONE"].includes(project.status)) return;
+
+  const pct = parseInt(String(formData.get("percent") ?? ""), 10);
+  if (!Number.isFinite(pct) || pct <= 0 || pct > 100) return;
+  const label = String(formData.get("label") ?? "").trim() || "Progress";
+
+  const total = await contractTotal(projectId);
+  const amount = Math.round(total * pct) / 100; // pct of the contract, to cents
+  const dueOn = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const seq = (await db.invoice.count({ where: { projectId } })) + 1;
+
+  await db.invoice.create({
+    data: {
+      projectId,
+      number: `INV-${projectId.slice(-6).toUpperCase()}-${seq}`,
+      amount,
+      status: "SENT",
+      dueOn,
+      milestones: { create: [{ label, percent: pct, amount }] },
+    },
+  });
+  revalidatePath(`/project/${projectId}`);
+  revalidatePath("/owner/money");
+  revalidatePath("/invoices");
+  redirect("/invoices");
+}
