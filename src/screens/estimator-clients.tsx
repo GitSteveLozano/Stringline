@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill, DataTable } from "@/components/ui";
+import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill, Button, DataTable } from "@/components/ui";
 import { money0 } from "@/lib/demo-data";
 import { initials } from "@/server/format";
 import { getEstimatorClients, clientKindLabel } from "@/server/estimator";
@@ -17,6 +17,9 @@ export async function EstimatorClients() {
           <div className="v2-quiet v2-body">
             {leadCount} {leadCount === 1 ? "lead" : "leads"} not yet won.
           </div>
+          <Link href="/client/new" style={{ textDecoration: "none" }}>
+            <Button variant="primary">+ New client</Button>
+          </Link>
         </Stack>
       </Pad>
 
