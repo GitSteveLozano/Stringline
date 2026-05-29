@@ -8,6 +8,10 @@ import { OwnerMoney } from "./owner-money";
 import { OwnerTeam } from "./owner-team";
 import { OwnerMore } from "./owner-more";
 import { EstimatorHome } from "./estimator-home";
+import { EstimatorQueue } from "./estimator-queue";
+import { EstimatorClients } from "./estimator-clients";
+import { EstimatorLibrary } from "./estimator-library";
+import { EstimatorMore } from "./estimator-more";
 import { ForemanHome } from "./foreman-home";
 import { ForemanCrew } from "./foreman-crew";
 import { ForemanField } from "./foreman-field";
@@ -30,6 +34,10 @@ const REGISTRY: Record<string, Entry> = {
   "owner/team": { title: "Team", Comp: OwnerTeam },
   "owner/more": { title: "More", Comp: OwnerMore },
   estimator: { title: "Takeoffs", Comp: EstimatorHome },
+  "estimator/queue": { title: "Queue", Comp: EstimatorQueue },
+  "estimator/clients": { title: "Clients", Comp: EstimatorClients },
+  "estimator/library": { title: "Library", Comp: EstimatorLibrary },
+  "estimator/more": { title: "More", Comp: EstimatorMore },
   foreman: { title: "Today", Comp: ForemanHome },
   "foreman/crew": { title: "Crew", Comp: ForemanCrew },
   "foreman/field": { title: "Field", Comp: ForemanField },
