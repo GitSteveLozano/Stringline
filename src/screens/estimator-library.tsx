@@ -1,4 +1,4 @@
-import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill } from "@/components/ui";
+import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill, DataTable } from "@/components/ui";
 import { getScopeLibrary } from "@/server/estimator";
 
 const rate = (n: number) => "$" + n.toFixed(2);
@@ -25,7 +25,34 @@ export async function EstimatorLibrary() {
         <Mono>cost → sell · /unit</Mono>
       </SectionBar>
 
-      <div>
+      {/* Desktop: pricing table */}
+      <DataTable
+        columns={[
+          { label: "Assembly" },
+          { label: "Code", width: "120px" },
+          { label: "Unit", width: "100px" },
+          { label: "Cost", num: true, width: "110px" },
+          { label: "Sell", num: true, width: "110px" },
+          { label: "Margin", width: "110px" },
+        ]}
+        rows={items.map((s) => ({
+          id: s.id,
+          cells: [
+            <span key="n" className="v2-gtd-strong" style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+              <span aria-hidden style={{ width: 12, height: 12, borderRadius: 3, background: s.color ?? "#888", display: "inline-block" }} />
+              {s.name}
+            </span>,
+            s.code,
+            `/${s.unit}`,
+            rate(s.cost),
+            rate(s.sell),
+            s.marginPct != null ? <Pill key="m" tone={s.marginPct < 0.3 ? "bad" : "good"}>{Math.round(s.marginPct * 100)}%</Pill> : "—",
+          ],
+        }))}
+      />
+
+      {/* Mobile: cards */}
+      <div className="v2-only-mobile">
         {items.map((s) => {
           const lowMargin = s.marginPct != null && s.marginPct < 0.3;
           return (
