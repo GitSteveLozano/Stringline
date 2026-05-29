@@ -1,4 +1,4 @@
-import { Pad, Stack, Eyebrow, BigNum, SectionBar, Mono, Row, Pill, Button, Card } from "@/components/ui";
+import { Pad, Stack, Eyebrow, BigNum, SectionBar, Mono, Row, Pill, Button, Card, DataTable } from "@/components/ui";
 import { getForemanTime } from "@/server/foreman";
 import { submitWeekForApproval } from "@/server/actions";
 
@@ -40,7 +40,28 @@ export async function ForemanTime() {
       <SectionBar>
         <Eyebrow>Crew this week</Eyebrow>
       </SectionBar>
-      <div>
+
+      {/* Desktop: hours table */}
+      <DataTable
+        columns={[
+          { label: "Crew" },
+          { label: "Role", width: "180px" },
+          { label: "Hours", num: true, width: "120px" },
+          { label: "Status", width: "120px" },
+        ]}
+        rows={week.crew.map((c) => ({
+          id: c.id,
+          cells: [
+            <span key="n" className="v2-gtd-strong">{c.name}</span>,
+            c.role,
+            `${c.hoursWeek}h`,
+            c.flagged ? <Pill key="s" tone="bad">Flag</Pill> : <Pill key="s" tone="good">OK</Pill>,
+          ],
+        }))}
+      />
+
+      {/* Mobile: cards */}
+      <div className="v2-only-mobile">
         {week.crew.map((c) => (
           <Row key={c.id} lead={<span className="v2-mono" style={{ fontWeight: 700 }}>{c.initials}</span>}>
             <div style={{ flex: 1, minWidth: 0 }}>
