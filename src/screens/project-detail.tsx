@@ -2,7 +2,13 @@ import Link from "next/link";
 import { Pad, Stack, Eyebrow, H1, H3, Field, Spread, Pill, SectionBar, Mono, Button, Rule } from "@/components/ui";
 import { LIFECYCLE, money0, statusLabel, healthLabel } from "@/lib/demo-data";
 import { getProjectDetail } from "@/server/projects";
-import { advanceProjectStatus, markProjectLost, addChangeOrder, decideChangeOrder, generateInvoice, markInvoicePaid } from "@/server/actions";
+import { advanceProjectStatus, markProjectLost, addChangeOrder, decideChangeOrder, generateInvoice, markInvoicePaid, snoozeGuardrail, rearmGuardrail } from "@/server/actions";
+
+const GUARDRAIL: Record<string, { label: string; detail: (t: number, c: number | null) => string }> = {
+  MARGIN: { label: "Margin floor", detail: (t, c) => `Min ${t}% margin · now ${c ?? "—"}%` },
+  SCHEDULE: { label: "Schedule slip", detail: (t, c) => `Alert past ${t}d behind · now ${c ?? 0}d` },
+  SAFETY: { label: "Safety check-ins", detail: (t, c) => `${c ?? 0} of ${t} crew checked in` },
+};
 
 const LOST_LABEL: Record<string, string> = {
   PRICE: "Price",
@@ -27,7 +33,7 @@ export async function ProjectDetail({ id }: { id: string }) {
     );
   }
 
-  const { project: p, budget, changeOrders, milestones, lostReason, lostNote, invoice } = detail;
+  const { project: p, budget, changeOrders, milestones, lostReason, lostNote, invoice, guardrails } = detail;
   const isLost = lostReason != null;
   const canLose = !isLost && (p.status === "DRAFTING" || p.status === "SENT");
   const canChangeOrder = !isLost && (p.status === "IN_PROGRESS" || p.status === "DONE");
@@ -132,6 +138,48 @@ export async function ProjectDetail({ id }: { id: string }) {
                       }}
                     />
                   </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Guardrails */}
+      {guardrails.length > 0 && (
+        <>
+          <SectionBar>
+            <Eyebrow>Guardrails</Eyebrow>
+            <Mono>{guardrails.length}</Mono>
+          </SectionBar>
+          <div>
+            {guardrails.map((g) => {
+              const meta = GUARDRAIL[g.type] ?? { label: g.type, detail: () => "" };
+              const active = g.status === "ARMED" || g.status === "TRIGGERED";
+              return (
+                <div key={g.id} className="v2-pad" style={{ paddingTop: 12, paddingBottom: 12 }}>
+                  <Spread>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="v2-body" style={{ fontSize: 14, fontWeight: 600 }}>{meta.label}</div>
+                      <div className="v2-quiet" style={{ fontSize: 13, marginTop: 2 }}>
+                        {meta.detail(g.threshold, g.currentValue)}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      {g.status === "TRIGGERED" ? (
+                        <Pill tone="bad" dot>Triggered</Pill>
+                      ) : g.status === "SNOOZED" ? (
+                        <Pill>Snoozed</Pill>
+                      ) : g.status === "MUTED" ? (
+                        <Pill>Muted</Pill>
+                      ) : (
+                        <Pill tone="good">Armed</Pill>
+                      )}
+                      <form action={(active ? snoozeGuardrail : rearmGuardrail).bind(null, g.id)}>
+                        <Button variant="ghost" type="submit">{active ? "Snooze" : "Re-arm"}</Button>
+                      </form>
+                    </div>
+                  </Spread>
                 </div>
               );
             })}

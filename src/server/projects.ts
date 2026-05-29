@@ -7,9 +7,17 @@ import type {
   ChangeOrderRow,
   MilestoneRow,
 } from "@/lib/demo-data";
-import type { Prisma } from "@prisma/client";
+import type { Prisma, GuardrailType, GuardrailStatus } from "@prisma/client";
 
 const num = (d: Prisma.Decimal | number | null): number => (d == null ? 0 : Number(d));
+
+export type GuardrailRow = {
+  id: string;
+  type: GuardrailType;
+  status: GuardrailStatus;
+  threshold: number;
+  currentValue: number | null;
+};
 
 type ProjectRow = {
   id: string;
@@ -117,6 +125,7 @@ export type ProjectDetail = {
   lostReason: string | null;
   lostNote: string | null;
   invoice: { number: string; amount: number; paid: boolean } | null;
+  guardrails: GuardrailRow[];
 };
 
 export async function getProjectDetail(id: string): Promise<ProjectDetail | null> {
@@ -129,6 +138,7 @@ export async function getProjectDetail(id: string): Promise<ProjectDetail | null
       budgetLines: { orderBy: { sort: "asc" } },
       changeOrders: { orderBy: { number: "asc" } },
       invoices: { include: { milestones: { orderBy: { percent: "desc" } } } },
+      guardrails: { orderBy: { type: "asc" } },
     },
   });
   if (!row) return null;
@@ -163,5 +173,13 @@ export async function getProjectDetail(id: string): Promise<ProjectDetail | null
       }
     : null;
 
-  return { project: toViewModel(row), budget, changeOrders, milestones, lostReason: row.lostReason, lostNote: row.lostNote, invoice };
+  const guardrails: GuardrailRow[] = row.guardrails.map((g) => ({
+    id: g.id,
+    type: g.type,
+    status: g.status,
+    threshold: g.threshold,
+    currentValue: g.currentValue,
+  }));
+
+  return { project: toViewModel(row), budget, changeOrders, milestones, lostReason: row.lostReason, lostNote: row.lostNote, invoice, guardrails };
 }

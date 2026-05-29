@@ -17,6 +17,8 @@ import {
   MeasurementSource,
   Anomaly,
   DispatchStatus,
+  GuardrailType,
+  GuardrailStatus,
 } from "@prisma/client";
 import {
   projects as fxProjects,
@@ -522,6 +524,18 @@ async function main() {
     });
   }
 
+  // ── Guardrails (per-project risk monitors) ───────────────────
+  const guardrailData = [
+    // Aspen is over budget → margin guardrail tripped, schedule slipping.
+    aspenId && { projectId: aspenId, type: GuardrailType.MARGIN, threshold: 18, currentValue: 11, status: GuardrailStatus.TRIGGERED },
+    aspenId && { projectId: aspenId, type: GuardrailType.SCHEDULE, threshold: 3, currentValue: 4, status: GuardrailStatus.TRIGGERED },
+    // Hillcrest is healthy → guardrails armed and quiet.
+    { projectId: hillcrestId, type: GuardrailType.MARGIN, threshold: 18, currentValue: 24, status: GuardrailStatus.ARMED },
+    { projectId: hillcrestId, type: GuardrailType.SCHEDULE, threshold: 3, currentValue: 1, status: GuardrailStatus.ARMED },
+    { projectId: hillcrestId, type: GuardrailType.SAFETY, threshold: 4, currentValue: 4, status: GuardrailStatus.ARMED },
+  ].filter(Boolean) as { projectId: string; type: GuardrailType; threshold: number; currentValue: number; status: GuardrailStatus }[];
+  await db.guardrail.createMany({ data: guardrailData });
+
   // ── Notifications (per-persona inbox) ────────────────────────
   // Kind taxonomy mirrors the schema comment: owner AUTH|RISK|LOG|PAID ·
   // foreman BLOCKER|CREW|SCHEDULE|AUTH · worker NEXT|BRIEF|PAY|LOG.
@@ -554,6 +568,7 @@ async function main() {
     users: await db.user.count(),
     assets: await db.asset.count(),
     dispatches: await db.dispatch.count(),
+    guardrails: await db.guardrail.count(),
     notifications: await db.notification.count(),
     projects: await db.project.count(),
     timeEntries: await db.timeEntry.count(),

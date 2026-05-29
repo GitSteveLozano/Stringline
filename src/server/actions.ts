@@ -538,3 +538,27 @@ export async function returnDispatch(id: string) {
   });
   revalidatePath("/dispatch");
 }
+
+// ── Guardrails ─────────────────────────────────────────────────
+
+/** Snooze a project guardrail for 7 days (ARMED/TRIGGERED → SNOOZED). */
+export async function snoozeGuardrail(id: string) {
+  const workspaceId = await getActiveWorkspaceId();
+  await db.guardrail.updateMany({
+    where: { id, project: { workspaceId } },
+    data: { status: "SNOOZED", snoozedUntil: new Date(Date.now() + 7 * 86_400_000) },
+  });
+  const g = await db.guardrail.findUnique({ where: { id }, select: { projectId: true } });
+  if (g) revalidatePath(`/project/${g.projectId}`);
+}
+
+/** Re-arm a snoozed/muted guardrail. */
+export async function rearmGuardrail(id: string) {
+  const workspaceId = await getActiveWorkspaceId();
+  await db.guardrail.updateMany({
+    where: { id, project: { workspaceId } },
+    data: { status: "ARMED", snoozedUntil: null, mutedReason: null },
+  });
+  const g = await db.guardrail.findUnique({ where: { id }, select: { projectId: true } });
+  if (g) revalidatePath(`/project/${g.projectId}`);
+}
