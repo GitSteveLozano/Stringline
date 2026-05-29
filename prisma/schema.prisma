@@ -517,7 +517,7 @@ enum DispatchStatus {
 model Dispatch {
   id        String         @id @default(cuid())
   ticketId  String
-  asset     Asset          @relation(fields: [assetId], references: [id])
+  asset     Asset          @relation(fields: [assetId], references: [id], onDelete: Cascade)
   assetId   String
   qty       Int
   projectId String
