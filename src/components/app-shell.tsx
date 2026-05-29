@@ -33,6 +33,10 @@ export function AppShell({
   const isActive = (href: string) =>
     href === homeHref ? pathname === homeHref : pathname === href || pathname.startsWith(href + "/");
 
+  // Desktop already shows the brand in the sidebar, so the topbar names the
+  // active section instead of repeating "Stringline".
+  const sectionTitle = tabs.find((t) => isActive(t.href))?.label ?? title;
+
   return (
     <div className={cn("v2", "v2-screen", "v2-app", meta.dark && "dark")}>
       {/* Desktop sidebar */}
@@ -56,7 +60,8 @@ export function AppShell({
       <div className="v2-shell-main">
         {/* Topbar (desktop) / appbar (mobile) */}
         <header className="v2-topbar">
-          <div className="v2-appbar-title" style={{ flex: 1 }}>{title}</div>
+          <div className="v2-appbar-title v2-only-mobile" style={{ flex: 1 }}>{title}</div>
+          <div className="v2-appbar-title v2-only-desktop" style={{ flex: 1 }}>{sectionTitle}</div>
           <WearingControl role={role} roles={roles} />
           <form action={signOut}>
             <IconButton aria-label="Sign out" type="submit">⏻</IconButton>
