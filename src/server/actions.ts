@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getActiveWorkspaceId } from "./workspace";
 import { weekStart } from "./dates";
+import { LIFECYCLE } from "@/lib/demo-data";
+import type { ProjectStatus } from "@prisma/client";
 
 // ── Foreman ────────────────────────────────────────────────────
 
@@ -109,6 +111,40 @@ export async function decideApproval(id: string, decision: "APPROVED" | "DENIED"
   revalidatePath("/approvals");
   revalidatePath("/owner/team");
   revalidatePath("/owner");
+}
+
+// ── Project lifecycle ──────────────────────────────────────────
+
+/**
+ * Advance a project one step along the lifecycle (Drafting → … → Paid).
+ * `to` must be the immediate next stage; the guard keeps the state machine
+ * forward-only and tolerant of stale/double submits. Side effects are stamped
+ * per transition (started date, completion progress).
+ */
+export async function advanceProjectStatus(id: string, to: ProjectStatus) {
+  const workspaceId = await getActiveWorkspaceId();
+  const project = await db.project.findFirst({
+    where: { id, workspaceId },
+    select: { status: true, startedOn: true },
+  });
+  if (!project) return;
+
+  // Only honor a move to the immediate next stage; ignore otherwise (no-op).
+  const next = LIFECYCLE[LIFECYCLE.indexOf(project.status) + 1];
+  if (to !== next) return;
+
+  const data: { status: ProjectStatus; startedOn?: Date; progress?: number } = { status: to };
+  if (to === "IN_PROGRESS" && !project.startedOn) data.startedOn = new Date();
+  if (to === "DONE") data.progress = 1;
+
+  await db.project.update({ where: { id }, data });
+
+  revalidatePath(`/project/${id}`);
+  revalidatePath("/owner");
+  revalidatePath("/owner/projects");
+  revalidatePath("/estimator");
+  revalidatePath("/estimator/queue");
+  revalidatePath("/owner/money");
 }
 
 // ── Estimator takeoff ──────────────────────────────────────────
