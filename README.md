@@ -28,10 +28,27 @@ npm run db:push             # sync schema to the database (or db:migrate)
 npm run db:seed             # seed the demo workspace: team, projects, billing
 ```
 
-The owner + project screens (`/owner`, `/owner/projects`, `/owner/money`,
-`/owner/team`, `/project/[id]`) read live from the database via the query
-layer in [`src/server/`](src/server/). The remaining screens still render
-from `src/lib/demo-data.ts` until their verticals are wired up.
+Every persona screen (owner, estimator, foreman, worker) reads live from the
+database via the query layer in [`src/server/`](src/server/); interactions
+(clock in/out, approvals, daily log, scope steps, takeoff scale gate, …) are
+server actions in [`src/server/actions.ts`](src/server/actions.ts).
+`src/lib/demo-data.ts` is now just the seed source + shared label maps.
+
+### Signing in
+
+Auth is split — office roles use email + password, crew use a phone + SMS
+code (the code is shown on-screen in dev since no SMS provider is wired).
+The seed prints credentials; the defaults are:
+
+```
+Office:  sarah@davisstucco.com / demo   (owner — wears all four hats)
+         maya@davisstucco.com  / demo   (estimator)
+Crew:    phone +1403555102  (Marcus, worker)  → code shown on the code screen
+```
+
+App routes (`/owner`, `/foreman`, …) require a session; `AUTH_SECRET` in
+`.env` signs the session cookie. The app is also an installable PWA
+(manifest + service worker) with an offline fallback.
 
 ## Layout
 
