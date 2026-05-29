@@ -86,3 +86,132 @@ export async function getTakeoff(projectId: string): Promise<{
     })),
   };
 }
+
+// ── Queue: the bid pipeline by stage ───────────────────────────
+export type QueueItem = { id: string; name: string; client: string; value: number };
+export type QueueStage = { key: string; label: string; tone?: "live" | "good" | "bad"; items: QueueItem[]; total: number };
+export type BidQueue = { stages: QueueStage[]; inFlightValue: number; winRate: number | null };
+
+const WON_STATUSES = ["ACCEPTED", "IN_PROGRESS", "DONE", "PAID"] as const;
+
+/** Estimator bid pipeline: drafting → out for bid → won, plus any lost bids. */
+export async function getBidQueue(): Promise<BidQueue> {
+  const workspaceId = await getActiveWorkspaceId();
+  const projects = await db.project.findMany({
+    where: { workspaceId },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      lostReason: true,
+      contractValue: true,
+      client: { select: { name: true } },
+    },
+  });
+
+  const toItem = (p: (typeof projects)[number]): QueueItem => ({
+    id: p.id,
+    name: p.name,
+    client: p.client.name,
+    value: Number(p.contractValue ?? 0),
+  });
+
+  const lost = projects.filter((p) => p.lostReason != null);
+  const lostIds = new Set(lost.map((p) => p.id));
+  const live = projects.filter((p) => !lostIds.has(p.id));
+
+  const drafting = live.filter((p) => p.status === "DRAFTING").map(toItem);
+  const sent = live.filter((p) => p.status === "SENT").map(toItem);
+  const won = live.filter((p) => (WON_STATUSES as readonly string[]).includes(p.status)).map(toItem);
+  const lostItems = lost.map(toItem);
+
+  const sum = (items: QueueItem[]) => items.reduce((s, i) => s + i.value, 0);
+  const stages: QueueStage[] = [
+    { key: "drafting", label: "Drafting", items: drafting, total: sum(drafting) },
+    { key: "sent", label: "Out for bid", tone: "live", items: sent, total: sum(sent) },
+    { key: "won", label: "Won", tone: "good", items: won, total: sum(won) },
+  ];
+  if (lostItems.length) stages.push({ key: "lost", label: "Lost", tone: "bad", items: lostItems, total: sum(lostItems) });
+
+  // Win rate over decided bids (won vs lost); null until something has been decided.
+  const decided = won.length + lostItems.length;
+  const winRate = decided > 0 ? won.length / decided : null;
+
+  return { stages, inFlightValue: sum(drafting) + sum(sent), winRate };
+}
+
+// ── Clients: estimator's book of business ──────────────────────
+export type ClientRow = {
+  id: string;
+  name: string;
+  kind: string;
+  isLead: boolean;
+  projectCount: number;
+  activeValue: number;
+};
+
+const KIND_LABEL: Record<string, string> = { BUILDER: "Builder", GC: "General contractor", OWNER: "Owner", ARCHITECT: "Architect" };
+export const clientKindLabel = (kind: string) => KIND_LABEL[kind] ?? kind;
+
+/** Clients with their pipeline footprint; leads float to the top. */
+export async function getEstimatorClients(): Promise<ClientRow[]> {
+  const workspaceId = await getActiveWorkspaceId();
+  const clients = await db.client.findMany({
+    where: { workspaceId },
+    orderBy: [{ isLead: "desc" }, { name: "asc" }],
+    select: {
+      id: true,
+      name: true,
+      kind: true,
+      isLead: true,
+      projects: { select: { contractValue: true } },
+    },
+  });
+
+  return clients.map((c) => ({
+    id: c.id,
+    name: c.name,
+    kind: c.kind,
+    isLead: c.isLead,
+    projectCount: c.projects.length,
+    activeValue: c.projects.reduce((s, p) => s + Number(p.contractValue ?? 0), 0),
+  }));
+}
+
+// ── Library: the pricing book (scope items / assemblies) ───────
+export type ScopeRow = {
+  id: string;
+  code: string;
+  name: string;
+  unit: string;
+  cost: number;
+  sell: number;
+  marginPct: number | null;
+  color: string | null;
+};
+
+/** Cost/sell rates per scope, with computed gross margin. */
+export async function getScopeLibrary(): Promise<ScopeRow[]> {
+  const workspaceId = await getActiveWorkspaceId();
+  const items = await db.scopeItem.findMany({
+    where: { workspaceId },
+    orderBy: { code: "asc" },
+    select: { id: true, code: true, name: true, unit: true, costRate: true, sellRate: true, color: true },
+  });
+
+  return items.map((s) => {
+    const cost = Number(s.costRate);
+    const sell = Number(s.sellRate);
+    return {
+      id: s.id,
+      code: s.code,
+      name: s.name,
+      unit: s.unit,
+      cost,
+      sell,
+      marginPct: sell > 0 ? (sell - cost) / sell : null,
+      color: s.color,
+    };
+  });
+}
