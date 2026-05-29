@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useTransition } from "react";
 import { Pad, Stack, Eyebrow, H2, SectionBar, Mono, Pill, Button, Card, Spread } from "@/components/ui";
 import {
   SCOPES,
@@ -13,8 +13,10 @@ import {
   type Measurement,
   type Confidence,
 } from "@/lib/takeoff";
-import { verifySheetScale, saveMeasurement } from "@/server/actions";
+import { verifySheetScale, saveMeasurement, priceTakeoff } from "@/server/actions";
 import type { TakeoffSheet, TakeoffMeasurement } from "@/server/estimator";
+
+const usd = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
 
 function confTone(c?: Confidence): "good" | "bad" | undefined {
   if (c === "HIGH") return "good";
@@ -26,10 +28,12 @@ export function TakeoffWorkspace({
   projectId,
   sheets,
   initialMeasurements,
+  rates,
 }: {
   projectId: string;
   sheets: TakeoffSheet[];
   initialMeasurements: TakeoffMeasurement[];
+  rates: Record<string, number>;
 }) {
   const scale = sheets[0]?.scale ?? 0.18;
 
@@ -53,7 +57,16 @@ export function TakeoffWorkspace({
   const [current, setCurrent] = useState<Pt[]>([]);
   const [activeScope, setActiveScope] = useState(SCOPES[0].code);
   const [aiRan, setAiRan] = useState(false);
+  const [pricing, startPricing] = useTransition();
+  const [pushedTotal, setPushedTotal] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+
+  function pushToEstimate() {
+    startPricing(async () => {
+      const total = await priceTakeoff(projectId);
+      setPushedTotal(total);
+    });
+  }
 
   function confirmScale(sheetId: string) {
     setVerified((v) => ({ ...v, [sheetId]: true }));
@@ -91,11 +104,12 @@ export function TakeoffWorkspace({
   const flagged = measurements.filter((m) => m.source === "ai" && m.confidence === "LOW");
   const liveSf = current.length >= 3 ? areaSf(current, scale) : 0;
 
-  // Totals per scope
-  const totals = SCOPES.map((s) => ({
-    ...s,
-    sf: measurements.filter((m) => m.scope === s.code).reduce((n, m) => n + m.sf, 0),
-  })).filter((t) => t.sf > 0);
+  // Totals per scope, with extended price (sf × sell rate).
+  const totals = SCOPES.map((s) => {
+    const sf = measurements.filter((m) => m.scope === s.code).reduce((n, m) => n + m.sf, 0);
+    return { ...s, sf, extended: sf * (rates[s.code] ?? 0) };
+  }).filter((t) => t.sf > 0);
+  const estimateTotal = totals.reduce((n, t) => n + t.extended, 0);
 
   // ── Sheets / scale gate ──────────────────────────────────────
   if (view === "sheets") {
@@ -305,6 +319,7 @@ export function TakeoffWorkspace({
         <>
           <SectionBar>
             <Eyebrow>Totals by scope</Eyebrow>
+            <Mono>sf · extended</Mono>
           </SectionBar>
           <Pad>
             <Stack gap="tight">
@@ -314,9 +329,29 @@ export function TakeoffWorkspace({
                     <span style={{ display: "inline-block", width: 12, height: 12, background: t.color, border: "1px solid var(--v2-ink)", marginRight: 8, verticalAlign: "middle" }} />
                     {t.name}
                   </span>
-                  <Mono>{t.sf.toLocaleString()} sf</Mono>
+                  <Mono>
+                    {t.sf.toLocaleString()} {t.code === "CAULK" ? "lf" : "sf"}
+                    {t.extended > 0 ? ` · ${usd(t.extended)}` : ""}
+                  </Mono>
                 </Spread>
               ))}
+            </Stack>
+          </Pad>
+
+          <SectionBar>
+            <Eyebrow accent>Estimate</Eyebrow>
+            <Mono>{usd(estimateTotal)}</Mono>
+          </SectionBar>
+          <Pad>
+            <Stack gap="tight">
+              <Button variant="primary" onClick={pushToEstimate} disabled={pricing || estimateTotal === 0}>
+                {pricing ? "Pricing…" : "Push to estimate"}
+              </Button>
+              <div className="v2-quiet v2-body" style={{ fontSize: 13 }}>
+                {pushedTotal != null
+                  ? `Bid value updated to ${usd(pushedTotal)} from saved measurements.`
+                  : "Prices saved measurements into this project's bid value."}
+              </div>
             </Stack>
           </Pad>
         </>
