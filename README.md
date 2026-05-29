@@ -1,6 +1,6 @@
 # Stringline
 
-Construction operations for exterior cladding subcontractors (EIFS, stucco, masonry, siding). Mobile-first PWA with four personas — Owner, Estimator, Foreman, Worker.
+Construction operations for exterior cladding subcontractors (EIFS, stucco, masonry, siding). Responsive PWA with four personas — Owner, Estimator, Foreman, Worker. Mobile-first phone layout (appbar + bottom tabs) below 900px; a desktop sidebar + topbar layout above it, on the same routes.
 
 Built from the V2 designs in [`designs/v2/`](designs/v2/). Start with [`designs/v2/READING.md`](designs/v2/READING.md) for the full product read-through, design system, data model, and open decisions.
 
