@@ -1,4 +1,4 @@
-import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill, Button, StatTile } from "@/components/ui";
+import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill, Button, StatTile, DataTable } from "@/components/ui";
 import Link from "next/link";
 import { money0 } from "@/lib/demo-data";
 import { getDispatchBoard, type DispatchRow } from "@/server/dispatch";
@@ -71,30 +71,66 @@ export async function Dispatch() {
         </div>
       </Pad>
 
-      <div className="v2-cols">
-        <section>
-          <SectionBar>
-            <Eyebrow>On job</Eyebrow>
-            <Mono>{onJob.length}</Mono>
-          </SectionBar>
-          {onJob.length === 0 ? (
-            <Pad><div className="v2-quiet v2-body">Nothing out.</div></Pad>
-          ) : (
-            onJob.map((d) => <DispatchItem key={d.id} d={d} />)
-          )}
-        </section>
+      {/* Desktop: dispatch table */}
+      <DataTable
+        columns={[
+          { label: "Asset" },
+          { label: "Qty", num: true, width: "90px" },
+          { label: "Project" },
+          { label: "Status", width: "180px" },
+          { label: "$ / day", num: true, width: "120px" },
+          { label: "", width: "120px" },
+        ]}
+        rows={[...onJob, ...returned].map((d) => ({
+          id: d.id,
+          cells: [
+            <span key="a" className="v2-gtd-strong">{d.asset}</span>,
+            `${d.qty}×`,
+            <Link key="p" href={`/project/${d.projectId}`} style={{ textDecoration: "none", color: "inherit" }}>{d.project}</Link>,
+            d.status === "OVERDUE" ? (
+              <Pill key="s" tone="bad" dot>Overdue{d.overdueDays > 0 ? ` · ${d.overdueDays}d` : ""}</Pill>
+            ) : d.status === "RETURNED" ? (
+              <Pill key="s" tone="good">Returned</Pill>
+            ) : (
+              <Pill key="s">Out · due {d.dueBack ?? "—"}</Pill>
+            ),
+            d.dailyValue > 0 ? money0(d.dailyValue) : "—",
+            d.status !== "RETURNED" ? (
+              <form key="r" action={returnDispatch.bind(null, d.id)}>
+                <Button variant="ghost" type="submit" style={{ padding: "6px 12px", fontSize: 12 }}>Return</Button>
+              </form>
+            ) : "",
+          ],
+        }))}
+      />
 
-        <section>
-          <SectionBar>
-            <Eyebrow>Returned</Eyebrow>
-            <Mono>{returned.length}</Mono>
-          </SectionBar>
-          {returned.length === 0 ? (
-            <Pad><div className="v2-quiet v2-body">No returns yet.</div></Pad>
-          ) : (
-            returned.map((d) => <DispatchItem key={d.id} d={d} />)
-          )}
-        </section>
+      {/* Mobile: on-job / returned cards */}
+      <div className="v2-only-mobile">
+        <div className="v2-cols">
+          <section>
+            <SectionBar>
+              <Eyebrow>On job</Eyebrow>
+              <Mono>{onJob.length}</Mono>
+            </SectionBar>
+            {onJob.length === 0 ? (
+              <Pad><div className="v2-quiet v2-body">Nothing out.</div></Pad>
+            ) : (
+              onJob.map((d) => <DispatchItem key={d.id} d={d} />)
+            )}
+          </section>
+
+          <section>
+            <SectionBar>
+              <Eyebrow>Returned</Eyebrow>
+              <Mono>{returned.length}</Mono>
+            </SectionBar>
+            {returned.length === 0 ? (
+              <Pad><div className="v2-quiet v2-body">No returns yet.</div></Pad>
+            ) : (
+              returned.map((d) => <DispatchItem key={d.id} d={d} />)
+            )}
+          </section>
+        </div>
       </div>
     </>
   );
