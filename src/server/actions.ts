@@ -6,8 +6,15 @@ import { db } from "@/lib/db";
 import { getActiveWorkspaceId } from "./workspace";
 import { getCurrentUser } from "./auth";
 import { weekStart } from "./dates";
-import { LIFECYCLE } from "@/lib/demo-data";
-import type { ProjectStatus, LostReason } from "@prisma/client";
+import type { ProjectStatus } from "@prisma/client";
+import {
+  nextStatus,
+  parseMoney,
+  normalizeLostReason,
+  nextChangeOrderNumber,
+  contractTotal as computeContractTotal,
+  takeoffTotal,
+} from "@/lib/workflow";
 
 // ── Foreman ────────────────────────────────────────────────────
 
@@ -147,8 +154,7 @@ export async function createProject(formData: FormData) {
   if (!name) return; // the form marks name required; ignore empty submits
 
   const address = String(formData.get("address") ?? "").trim() || null;
-  const rawValue = String(formData.get("contractValue") ?? "").replace(/[^0-9.]/g, "");
-  const contractValue = rawValue ? Number(rawValue) : null;
+  const contractValue = parseMoney(String(formData.get("contractValue") ?? ""));
 
   // Resolve the client: a typed new name takes precedence over the picker.
   const newClientName = String(formData.get("newClient") ?? "").trim();
@@ -187,9 +193,6 @@ export async function createProject(formData: FormData) {
   redirect(`/project/${project.id}`);
 }
 
-
-const LOST_REASONS = ["PRICE", "TIMING", "SCOPE", "GHOSTED", "COMPETITOR", "OTHER"];
-
 /**
  * Mark a bid lost: stamp the reason (+ optional note) and archive it. Only
  * pre-acceptance bids (Drafting / Sent) can be lost; once work is accepted it
@@ -205,8 +208,7 @@ export async function markProjectLost(id: string, formData: FormData) {
   if (!project) return;
   if (project.status !== "DRAFTING" && project.status !== "SENT") return;
 
-  const reasonRaw = String(formData.get("reason") ?? "").toUpperCase();
-  const reason = (LOST_REASONS.includes(reasonRaw) ? reasonRaw : "OTHER") as LostReason;
+  const reason = normalizeLostReason(String(formData.get("reason") ?? ""));
   const note = String(formData.get("note") ?? "").trim() || null;
 
   await db.project.update({
@@ -236,8 +238,7 @@ export async function advanceProjectStatus(id: string, to: ProjectStatus) {
   if (!project) return;
 
   // Only honor a move to the immediate next stage; ignore otherwise (no-op).
-  const next = LIFECYCLE[LIFECYCLE.indexOf(project.status) + 1];
-  if (to !== next) return;
+  if (to !== nextStatus(project.status)) return;
 
   const data: { status: ProjectStatus; startedOn?: Date; progress?: number } = { status: to };
   if (to === "IN_PROGRESS" && !project.startedOn) data.startedOn = new Date();
@@ -262,8 +263,10 @@ async function contractTotal(projectId: string): Promise<number> {
     select: { contractValue: true, changeOrders: { where: { status: "ACCEPTED" }, select: { valueDelta: true } } },
   });
   if (!project) return 0;
-  const base = Number(project.contractValue ?? 0);
-  return base + project.changeOrders.reduce((s, c) => s + Number(c.valueDelta), 0);
+  return computeContractTotal(
+    Number(project.contractValue ?? 0),
+    project.changeOrders.map((c) => Number(c.valueDelta))
+  );
 }
 
 /**
@@ -341,8 +344,8 @@ export async function addChangeOrder(projectId: string, formData: FormData) {
   if (!project) return;
 
   const description = String(formData.get("description") ?? "").trim();
-  const delta = Number(String(formData.get("delta") ?? "").replace(/[^0-9.-]/g, ""));
-  if (!description || !Number.isFinite(delta) || delta === 0) return;
+  const delta = parseMoney(String(formData.get("delta") ?? ""), true);
+  if (!description || delta == null || delta === 0) return;
 
   const last = await db.changeOrder.findFirst({
     where: { projectId },
@@ -353,7 +356,7 @@ export async function addChangeOrder(projectId: string, formData: FormData) {
   await db.changeOrder.create({
     data: {
       projectId,
-      number: (last?.number ?? 0) + 1,
+      number: nextChangeOrderNumber(last?.number),
       description,
       valueDelta: delta,
       status: "SENT",
@@ -464,9 +467,7 @@ export async function priceTakeoff(projectId: string): Promise<number> {
   ]);
   const rate = new Map(scopeItems.map((s) => [s.code, Number(s.sellRate)]));
 
-  const total = Math.round(
-    measurements.reduce((sum, m) => sum + m.qty * (rate.get(m.code) ?? 0), 0)
-  );
+  const total = takeoffTotal(measurements, rate);
 
   await db.project.update({ where: { id: projectId }, data: { contractValue: total } });
 

@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { getActiveWorkspaceId } from "./workspace";
+import { winRate } from "@/lib/workflow";
 
 export type TakeoffCard = {
   id: string;
@@ -143,11 +144,7 @@ export async function getBidQueue(): Promise<BidQueue> {
   ];
   if (lostItems.length) stages.push({ key: "lost", label: "Lost", tone: "bad", items: lostItems, total: sum(lostItems) });
 
-  // Win rate over decided bids (won vs lost); null until something has been decided.
-  const decided = won.length + lostItems.length;
-  const winRate = decided > 0 ? won.length / decided : null;
-
-  return { stages, inFlightValue: sum(drafting) + sum(sent), winRate };
+  return { stages, inFlightValue: sum(drafting) + sum(sent), winRate: winRate(won.length, lostItems.length) };
 }
 
 // ── Clients: estimator's book of business ──────────────────────
