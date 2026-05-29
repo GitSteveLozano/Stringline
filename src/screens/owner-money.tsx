@@ -26,7 +26,7 @@ export async function OwnerMoney() {
         <Eyebrow>This month</Eyebrow>
       </SectionBar>
       <Pad>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div className="v2-stat-grid">
           {tiles.map((t) => (
             <div key={t.label} className="v2-card">
               <Eyebrow>{t.label}</Eyebrow>
