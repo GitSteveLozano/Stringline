@@ -78,6 +78,11 @@ export async function ProjectDetail({ id }: { id: string }) {
                 Daily log →
               </span>
             </Link>
+            <Link href={`/project/${p.id}/edit`} style={{ textDecoration: "none" }}>
+              <span className="v2-mono" style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                Edit →
+              </span>
+            </Link>
           </div>
         </Stack>
       </Pad>
