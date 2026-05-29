@@ -628,10 +628,97 @@ body {
     display: none;
   }
   .v2-main-inner {
-    max-width: 960px;
+    max-width: none;
+    margin: 0;
+  }
+
+  /* Worker stays phone-only: keep the centered phone frame on desktop. */
+  .v2-app.phone-only {
+    display: flex;
+    flex-direction: column;
+  }
+  .v2-app.phone-only .v2-sidebar {
+    display: none;
+  }
+  .v2-app.phone-only .v2-shell-main {
+    width: 100%;
+    max-width: 440px;
     margin: 0 auto;
+    height: 100dvh;
+    border-left: 2px solid var(--v2-sand-2);
+    border-right: 2px solid var(--v2-sand-2);
+  }
+  .v2-app.phone-only .v2-bottombar {
+    display: flex;
+  }
+  .v2-app.phone-only .v2-only-desktop {
+    display: none;
+  }
+  .v2-app.phone-only .v2-only-mobile {
+    display: block;
   }
 }
+
+/* ============================================================
+   DATA TABLE (desktop dense tables — the SaaS-shell brief)
+   CSS-grid rows so a whole row can be a single <a> link.
+   Tables are desktop-only; mobile screens render the card lists.
+   ============================================================ */
+.v2-gtable {
+  display: none;
+}
+@media (min-width: 900px) {
+  .v2-gtable {
+    display: block;
+  }
+}
+.v2-gtable-head,
+.v2-gtable-row {
+  display: grid;
+  align-items: center;
+}
+.v2-gtable-head {
+  border-bottom: 2px solid var(--v2-ink);
+  background: var(--v2-sand-soft);
+}
+.v2-gth {
+  font-family: var(--v2-font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--v2-ink-3);
+  padding: 10px 20px;
+}
+.v2-gtable-row {
+  border-bottom: 1px solid var(--v2-line-soft);
+  text-decoration: none;
+  color: inherit;
+}
+.v2-gtable-row.link:hover {
+  background: var(--v2-sand-soft);
+}
+.v2-gtd {
+  padding: 13px 20px;
+  font-size: 14px;
+  min-width: 0;
+}
+.v2-gth.num,
+.v2-gtd.num {
+  text-align: right;
+  font-family: var(--v2-font-mono);
+  justify-self: end;
+}
+.v2-gtd-strong {
+  font-family: var(--v2-font-tight);
+  font-weight: 700;
+}
+.v2-gtd-sub {
+  color: var(--v2-ink-3);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
 
 /* Notification bell badge */
 .v2-bell {

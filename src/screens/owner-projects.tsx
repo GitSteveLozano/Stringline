@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { SectionBar, Mono, Eyebrow, Row, Pill, Button, Pad } from "@/components/ui";
-import { healthLabel, type Project, type ProjectHealth } from "@/lib/demo-data";
+import { SectionBar, Mono, Eyebrow, Row, Pill, Button, Pad, DataTable } from "@/components/ui";
+import { healthLabel, money0, statusLabel, type Project, type ProjectHealth } from "@/lib/demo-data";
 import { listProjects } from "@/server/projects";
 
 function tone(h: ProjectHealth): "good" | "bad" | undefined {
@@ -26,7 +26,33 @@ export async function OwnerProjects() {
           <Button variant="primary" style={{ width: "100%" }}>+ New project</Button>
         </Link>
       </Pad>
-      <div className="v2-cols">
+
+      {/* Desktop: one dense table of every project */}
+      <DataTable
+        columns={[
+          { label: "Project" },
+          { label: "Client" },
+          { label: "Stage", width: "140px" },
+          { label: "Schedule", width: "140px" },
+          { label: "Health", width: "150px" },
+          { label: "Value", num: true, width: "130px" },
+        ]}
+        rows={projects.map((p) => ({
+          id: p.id,
+          href: `/project/${p.id}`,
+          cells: [
+            <span key="n" className="v2-gtd-strong">{p.name}</span>,
+            p.client,
+            statusLabel[p.status],
+            p.dayOf ? `Day ${p.dayOf}/${p.dayTotal}` : "—",
+            <Pill key="h" tone={tone(p.health)}>{healthLabel[p.health]}</Pill>,
+            p.contractValue > 0 ? money0(p.contractValue) : "—",
+          ],
+        }))}
+      />
+
+      {/* Mobile: bucketed cards */}
+      <div className="v2-only-mobile">
       {BUCKETS.map((b) => {
         const items = projects.filter(b.match);
         if (items.length === 0) return null;

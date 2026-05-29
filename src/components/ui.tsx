@@ -4,7 +4,39 @@
  * Ported from designs/v2 — keep visual parity with designs/v2/styles.css.
  */
 import * as React from "react";
+import Link from "next/link";
 import { cn } from "@/lib/cn";
+
+/* ── DataTable: desktop dense grid-table; whole row links via <a> ── */
+export type TableColumn = { label: string; num?: boolean; width?: string };
+export type TableRow = { id: string; href?: string; cells: React.ReactNode[] };
+
+export function DataTable({ columns, rows }: { columns: TableColumn[]; rows: TableRow[] }) {
+  const template = columns.map((c) => c.width ?? "1fr").join(" ");
+  return (
+    <div className="v2-gtable">
+      <div className="v2-gtable-head" style={{ gridTemplateColumns: template }}>
+        {columns.map((c, i) => (
+          <div key={i} className={cn("v2-gth", c.num && "num")}>{c.label}</div>
+        ))}
+      </div>
+      {rows.map((r) => {
+        const cells = columns.map((c, i) => (
+          <div key={i} className={cn("v2-gtd", c.num && "num")}>{r.cells[i]}</div>
+        ));
+        return r.href ? (
+          <Link key={r.id} href={r.href} className="v2-gtable-row link" style={{ gridTemplateColumns: template }}>
+            {cells}
+          </Link>
+        ) : (
+          <div key={r.id} className="v2-gtable-row" style={{ gridTemplateColumns: template }}>
+            {cells}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 type DivProps = React.HTMLAttributes<HTMLDivElement>;
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
