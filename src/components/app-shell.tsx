@@ -40,7 +40,7 @@ export function AppShell({
   const sectionTitle = tabs.find((t) => isActive(t.href))?.label ?? title;
 
   return (
-    <div className={cn("v2", "v2-screen", "v2-app", meta.dark && "dark")}>
+    <div className={cn("v2", "v2-screen", "v2-app", meta.dark && "dark", role === "worker" && "phone-only")}>
       {/* Desktop sidebar */}
       <aside className="v2-sidebar">
         <div className="v2-sidebar-brand">Stringline</div>
