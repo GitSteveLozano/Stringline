@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill } from "@/components/ui";
+import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill, StatTile } from "@/components/ui";
 import { money0, healthLabel, statusLabel, type ProjectHealth } from "@/lib/demo-data";
 import { getClientProfile, clientKindLabel } from "@/server/estimator";
 
@@ -42,10 +42,7 @@ export async function ClientProfile({ id }: { id: string }) {
       <Pad>
         <div className="v2-stat-grid" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
           {tiles.map((t) => (
-            <div key={t.label} className="v2-card">
-              <Eyebrow>{t.label}</Eyebrow>
-              <div className="v2-h2" style={{ marginTop: 8 }}>{t.value}</div>
-            </div>
+            <StatTile key={t.label} label={t.label}>{t.value}</StatTile>
           ))}
         </div>
       </Pad>

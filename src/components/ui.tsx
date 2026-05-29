@@ -134,6 +134,26 @@ export function Card({
   );
 }
 
+/* ── StatTile: labelled metric card (Eyebrow + big value) ── */
+export function StatTile({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <Card>
+      <Eyebrow>{label}</Eyebrow>
+      <div className="v2-h2" style={{ marginTop: 8 }}>{children}</div>
+    </Card>
+  );
+}
+
+/* ── Meter: thin progress bar, value 0..1, red when danger ── */
+export function Meter({ value, danger }: { value: number; danger?: boolean }) {
+  const pct = Math.min(100, Math.max(0, value * 100));
+  return (
+    <div style={{ height: 8, background: "var(--v2-sand-2)", border: "1px solid var(--v2-ink)", marginTop: 6 }}>
+      <div style={{ width: `${pct}%`, height: "100%", background: danger ? "var(--v2-bad)" : "var(--v2-accent)" }} />
+    </div>
+  );
+}
+
 /* ── Row (list item, optional lead slot) ── */
 export function Row({
   lead,

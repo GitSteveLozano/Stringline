@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Spread } from "@/components/ui";
+import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Spread, StatTile, Meter } from "@/components/ui";
 import { money0 } from "@/lib/demo-data";
 import { getReports, type JobBurnRow, type StageBar } from "@/server/reports";
 
@@ -13,9 +13,7 @@ function JobBurnLine({ j }: { j: JobBurnRow }) {
           <span className="v2-body" style={{ fontSize: 14, fontWeight: 600 }}>{j.name}</span>
           <Mono>{pct(j.usedPct)}</Mono>
         </Spread>
-        <div style={{ height: 8, background: "var(--v2-sand-2)", border: "1px solid var(--v2-ink)", marginTop: 6 }}>
-          <div style={{ width: `${j.usedPct * 100}%`, height: "100%", background: j.overBudget ? "var(--v2-bad)" : "var(--v2-accent)" }} />
-        </div>
+        <Meter value={j.usedPct} danger={j.overBudget} />
         <div className="v2-quiet" style={{ fontSize: 13, marginTop: 4 }}>
           {money0(j.spent)} spent of {money0(j.contractValue)}{j.overBudget ? " · over budget" : ""}
         </div>
@@ -25,16 +23,13 @@ function JobBurnLine({ j }: { j: JobBurnRow }) {
 }
 
 function StageLine({ s, max }: { s: StageBar; max: number }) {
-  const width = max > 0 ? (s.value / max) * 100 : 0;
   return (
     <div className="v2-pad" style={{ paddingTop: 12, paddingBottom: 12 }}>
       <Spread>
         <span className="v2-body" style={{ fontSize: 14 }}>{s.label}</span>
         <Mono>{money0(s.value)}</Mono>
       </Spread>
-      <div style={{ height: 8, background: "var(--v2-sand-2)", border: "1px solid var(--v2-ink)", marginTop: 6 }}>
-        <div style={{ width: `${width}%`, height: "100%", background: "var(--v2-accent)" }} />
-      </div>
+      <Meter value={max > 0 ? s.value / max : 0} />
     </div>
   );
 }
@@ -67,10 +62,7 @@ export async function Reports() {
       <Pad>
         <div className="v2-stat-grid">
           {tiles.map((t) => (
-            <div key={t.label} className="v2-card">
-              <Eyebrow>{t.label}</Eyebrow>
-              <div className="v2-h2" style={{ marginTop: 8 }}>{t.value}</div>
-            </div>
+            <StatTile key={t.label} label={t.label}>{t.value}</StatTile>
           ))}
         </div>
       </Pad>

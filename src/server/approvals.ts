@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { getActiveWorkspaceId } from "./workspace";
-import { initials } from "./format";
+import { initials, relativeAge } from "./format";
 
 const KIND_LABEL: Record<string, string> = {
   MATERIALS: "Materials",
@@ -18,14 +18,6 @@ export type ApprovalCard = {
   age: string;
   urgent: boolean;
 };
-
-function ageLabel(createdAt: Date): string {
-  const mins = Math.max(1, Math.round((Date.now() - createdAt.getTime()) / 60000));
-  if (mins < 60) return `${mins}m`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h`;
-  return `${Math.round(hrs / 24)}d`;
-}
 
 export async function getPendingApprovals(): Promise<ApprovalCard[]> {
   const workspaceId = await getActiveWorkspaceId();
@@ -48,7 +40,7 @@ export async function getPendingApprovals(): Promise<ApprovalCard[]> {
       site: r.project.name.split(/[—-]/)[0].trim(),
       detail: r.detail,
       amount: r.unit === "hrs" ? `${amt} hrs` : `$${amt.toLocaleString("en-US")}`,
-      age: ageLabel(r.createdAt),
+      age: relativeAge(r.createdAt),
       urgent: r.urgent,
     };
   });
