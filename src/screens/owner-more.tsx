@@ -8,6 +8,7 @@ const GROUPS: { heading: string; items: { label: string; icon: IconName; href?: 
     heading: "Workflow",
     items: [
       { label: "Schedule", icon: "today", href: "/schedule" },
+      { label: "Invoices", icon: "money", href: "/invoices" },
       { label: "Rentals", icon: "queue", href: "/dispatch" },
       { label: "Equipment", icon: "field", href: "/assets" },
       { label: "Measurements", icon: "scope" },
