@@ -632,6 +632,27 @@ body {
   }
 }
 
+/* Dashboard layout helpers (responsive) */
+.v2-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.v2-cols {
+  display: block;
+}
+@media (min-width: 900px) {
+  .v2-stat-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .v2-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+}
+
 
 @media (prefers-reduced-motion: reduce) {
   *,

@@ -92,14 +92,18 @@ export async function getDashboard() {
   const all = await listProjects();
   const running = all.filter((p) => p.status === "IN_PROGRESS");
   const atRisk = all.filter((p) => p.health === "OVER_BUDGET" || p.health === "AT_RISK");
-  const onClock = await db.timeEntry.findMany({
-    where: { clockOut: null, project: { workspaceId } },
-    select: { userId: true },
-    distinct: ["userId"],
-  });
+  const [onClock, pendingApprovals] = await Promise.all([
+    db.timeEntry.findMany({
+      where: { clockOut: null, project: { workspaceId } },
+      select: { userId: true },
+      distinct: ["userId"],
+    }),
+    db.approval.count({ where: { status: "PENDING", project: { workspaceId } } }),
+  ]);
   return {
     runningCount: running.length,
     crewOnClock: onClock.length,
+    pendingApprovals,
     atRisk,
     onSite: running,
   };
