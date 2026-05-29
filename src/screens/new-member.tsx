@@ -1,4 +1,4 @@
-import { Pad, Stack, Eyebrow, H1, Field, Button } from "@/components/ui";
+import { Pad, Stack, Eyebrow, H1, Field, Button, FormSelect } from "@/components/ui";
 import { createMember } from "@/server/actions";
 
 /** Invite a teammate — lands as a pending member the roster can confirm. */
@@ -13,15 +13,12 @@ export function NewMember() {
 
           <Field label="Name" name="name" placeholder="Jordan Pike" required />
 
-          <label style={{ display: "block" }}>
-            <div className="v2-eyebrow" style={{ marginBottom: 6 }}>Role</div>
-            <select className="v2-field" name="role" defaultValue="WORKER">
-              <option value="OWNER">Owner</option>
-              <option value="ESTIMATOR">Estimator</option>
-              <option value="FOREMAN">Foreman</option>
-              <option value="WORKER">Crew</option>
-            </select>
-          </label>
+          <FormSelect label="Role" name="role" defaultValue="WORKER">
+            <option value="OWNER">Owner</option>
+            <option value="ESTIMATOR">Estimator</option>
+            <option value="FOREMAN">Foreman</option>
+            <option value="WORKER">Crew</option>
+          </FormSelect>
 
           <Field label="Hourly rate (optional)" name="rate" inputMode="decimal" placeholder="32" />
           <Field label="Email (optional)" name="email" type="email" placeholder="jordan@davisstucco.com" />

@@ -163,6 +163,34 @@ export function Button({
   );
 }
 
+/* ── Form select / textarea: labelled, matching Field's chrome ── */
+export function FormSelect({
+  label,
+  className,
+  children,
+  ...rest
+}: React.SelectHTMLAttributes<HTMLSelectElement> & { label: string }) {
+  return (
+    <label style={{ display: "block" }}>
+      <div className="v2-eyebrow" style={{ marginBottom: 6 }}>{label}</div>
+      <select className={cn("v2-field", className)} {...rest}>{children}</select>
+    </label>
+  );
+}
+
+export function FormTextarea({
+  label,
+  className,
+  ...rest
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string }) {
+  return (
+    <label style={{ display: "block" }}>
+      <div className="v2-eyebrow" style={{ marginBottom: 6 }}>{label}</div>
+      <textarea className={cn("v2-field", className)} {...rest} />
+    </label>
+  );
+}
+
 /* ── Card ── */
 export function Card({
   accent,
