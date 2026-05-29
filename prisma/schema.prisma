@@ -64,6 +64,7 @@ model Membership {
   customRole   CustomRole? @relation(fields: [customRoleId], references: [id])
   customRoleId String?
   baseHourly   Decimal?    @db.Decimal(10, 2)
+  pending      Boolean     @default(false) // invite sent, not yet accepted
   createdAt    DateTime    @default(now())
 
   @@unique([userId, workspaceId, role])
@@ -161,11 +162,18 @@ model Project {
   contractValue Decimal?      @db.Decimal(12, 2)
   sqftTotal     Int?
   targetSqftHr  Int?
+  // Schedule + cached rollups (derived nightly; cheap to read on every dashboard)
+  startedOn     DateTime?
+  durationDays  Int?
+  crewSize      Int           @default(0)
+  spentToDate   Decimal?      @db.Decimal(12, 2)
+  progress      Float         @default(0) // 0..1 percent complete
   // Lost-bid capture
   lostReason    LostReason?
   lostNote      String?
 
   measurements Measurement[]
+  budgetLines  BudgetLine[]
   assignments  Assignment[]
   timeEntries  TimeEntry[]
   dailyLogs    DailyLog[]
@@ -219,6 +227,20 @@ model Measurement {
   confidence  Confidence?
   reference   String? // INSIDE | CENTER | OUTSIDE (EIFS measurement ref)
   createdAt   DateTime    @default(now())
+
+  @@index([projectId])
+}
+
+// Budget breakdown — bid vs spent per cost-code grouping. Drives the
+// "Budget vs spent" bars on project detail; rolls up into Project.spentToDate.
+model BudgetLine {
+  id        String  @id @default(cuid())
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  label     String
+  bid       Decimal @db.Decimal(12, 2)
+  spent     Decimal @db.Decimal(12, 2) @default(0)
+  sort      Int     @default(0)
 
   @@index([projectId])
 }

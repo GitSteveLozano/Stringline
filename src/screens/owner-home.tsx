@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill } from "@/components/ui";
-import { dashboardSummary, healthLabel, type ProjectHealth } from "@/lib/demo-data";
+import { healthLabel, type ProjectHealth } from "@/lib/demo-data";
+import { getDashboard } from "@/server/projects";
 
 function tone(h: ProjectHealth): "good" | "bad" | undefined {
   if (h === "ON_TRACK") return "good";
@@ -8,8 +9,8 @@ function tone(h: ProjectHealth): "good" | "bad" | undefined {
   return undefined;
 }
 
-export function OwnerHome() {
-  const s = dashboardSummary();
+export async function OwnerHome() {
+  const s = await getDashboard();
   const caughtUp = s.atRisk.length === 0;
 
   return (

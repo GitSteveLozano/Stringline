@@ -1,7 +1,9 @@
 import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill } from "@/components/ui";
 import { money, money0 } from "@/lib/demo-data";
+import { getReceivables } from "@/server/money";
 
-export function OwnerMoney() {
+export async function OwnerMoney() {
+  const ar = await getReceivables();
   const net = money.cashIn30 - money.cashOut30;
   const tiles = [
     { label: "Cash in · 30d", value: money0(money.cashIn30) },
@@ -36,10 +38,10 @@ export function OwnerMoney() {
 
       <SectionBar>
         <Eyebrow>Receivables</Eyebrow>
-        <Mono>{money.ar.length}</Mono>
+        <Mono>{ar.length}</Mono>
       </SectionBar>
       <div>
-        {money.ar.map((r) => {
+        {ar.map((r) => {
           const overdue = r.age.startsWith("overdue");
           return (
             <Row key={r.client}>

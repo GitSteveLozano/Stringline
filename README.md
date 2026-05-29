@@ -20,11 +20,18 @@ npm run db:generate         # generate the Prisma client
 npm run dev                 # http://localhost:3000
 ```
 
-To run migrations once a Postgres database is reachable:
+Once a Postgres database is reachable, sync the schema and load the demo
+workspace (Davis Stucco LLC — the fixtures the screens were built against):
 
 ```bash
-npm run db:migrate
+npm run db:push             # sync schema to the database (or db:migrate)
+npm run db:seed             # seed the demo workspace: team, projects, billing
 ```
+
+The owner + project screens (`/owner`, `/owner/projects`, `/owner/money`,
+`/owner/team`, `/project/[id]`) read live from the database via the query
+layer in [`src/server/`](src/server/). The remaining screens still render
+from `src/lib/demo-data.ts` until their verticals are wired up.
 
 ## Layout
 
@@ -36,8 +43,11 @@ src/
   lib/
     cn.ts         className join helper
     db.ts         Prisma client singleton
+    demo-data.ts  V2 fixtures — seed source + unwired screens
+  server/         Prisma-backed query layer (view-model loaders)
 prisma/
   schema.prisma   data model — core spine + V2SchemaSpec gap-closers
+  seed.ts         loads demo-data.ts fixtures into the database
 designs/v2/       the design package this app is built from
 ```
 

@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { Pad, Card, Spread, Eyebrow, SectionBar, Mono, Row, Pill } from "@/components/ui";
 import { Icon } from "@/components/icon";
-import { team, approvals } from "@/lib/demo-data";
+import { approvals } from "@/lib/demo-data";
+import { getTeam } from "@/server/team";
 
-export function OwnerTeam() {
+export async function OwnerTeam() {
+  const team = await getTeam();
   const office = team.filter((m) => m.group === "Office");
   const field = team.filter((m) => m.group === "Field");
 
