@@ -16,6 +16,7 @@ import {
   Confidence,
   MeasurementSource,
   Anomaly,
+  DispatchStatus,
 } from "@prisma/client";
 import {
   projects as fxProjects,
@@ -482,6 +483,45 @@ async function main() {
     });
   }
 
+  // ── Assets + dispatch (equipment out on jobs) ────────────────
+  const DAY = 86_400_000;
+  const aspenId = projectIdByFixtureId.get("p-aspen") ?? null;
+  const assetSpecs = [
+    { sku: "SCAF-01", name: "Scaffold frame set", category: "Access", dailyRate: 12, ownedQty: 40, replacement: 180 },
+    { sku: "MIX-01", name: "Mortar mixer", category: "Mixing", dailyRate: 35, ownedQty: 4, replacement: 2200 },
+    { sku: "PUMP-01", name: "Mortar pump", category: "Mixing", dailyRate: 85, ownedQty: 2, replacement: 9800 },
+    { sku: "GEN-01", name: "Generator 7kW", category: "Power", dailyRate: 45, ownedQty: 3, replacement: 1600 },
+    { sku: "LAS-01", name: "Rotary laser level", category: "Layout", dailyRate: 18, ownedQty: 5, replacement: 700 },
+  ];
+  const assetBySku = new Map<string, string>();
+  for (const a of assetSpecs) {
+    const asset = await db.asset.create({ data: { workspaceId: ws.id, ...a } });
+    assetBySku.set(a.sku, asset.id);
+  }
+  // dueInDays < 0 reads as overdue (derived at query time from dueBack).
+  const dispatchSpecs = [
+    { ticket: "D-1042", sku: "SCAF-01", qty: 24, project: hillcrestId, sentDaysAgo: 10, dueInDays: 20, returned: false },
+    { ticket: "D-1043", sku: "MIX-01", qty: 2, project: aspenId, sentDaysAgo: 5, dueInDays: -2, returned: false },
+    { ticket: "D-1044", sku: "GEN-01", qty: 1, project: hillcrestId, sentDaysAgo: 3, dueInDays: 10, returned: false },
+    { ticket: "D-1045", sku: "PUMP-01", qty: 1, project: hillcrestId, sentDaysAgo: 1, dueInDays: 6, returned: false },
+    { ticket: "D-1039", sku: "LAS-01", qty: 1, project: aspenId, sentDaysAgo: 12, dueInDays: -5, returned: true },
+  ];
+  for (const d of dispatchSpecs) {
+    if (!d.project) continue;
+    await db.dispatch.create({
+      data: {
+        ticketId: d.ticket,
+        assetId: assetBySku.get(d.sku)!,
+        qty: d.qty,
+        projectId: d.project,
+        sentOn: new Date(Date.now() - d.sentDaysAgo * DAY),
+        dueBack: new Date(Date.now() + d.dueInDays * DAY),
+        status: d.returned ? DispatchStatus.RETURNED : DispatchStatus.OUT,
+        signedBy: "Ana Castillo",
+      },
+    });
+  }
+
   // ── Notifications (per-persona inbox) ────────────────────────
   // Kind taxonomy mirrors the schema comment: owner AUTH|RISK|LOG|PAID ·
   // foreman BLOCKER|CREW|SCHEDULE|AUTH · worker NEXT|BRIEF|PAY|LOG.
@@ -490,7 +530,6 @@ async function main() {
   const mayaId = userByName.get("Maya Okonkwo")!;
   const anaId = userByName.get("Ana Castillo")!;
   const marcusLeeId = userByName.get("Marcus Lee")!;
-  const aspenId = projectIdByFixtureId.get("p-aspen") ?? null;
 
   await db.notification.createMany({
     data: [
@@ -513,6 +552,8 @@ async function main() {
 
   const counts = {
     users: await db.user.count(),
+    assets: await db.asset.count(),
+    dispatches: await db.dispatch.count(),
     notifications: await db.notification.count(),
     projects: await db.project.count(),
     timeEntries: await db.timeEntry.count(),
