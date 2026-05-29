@@ -51,9 +51,7 @@ export async function OwnerTeam() {
       </Pad>
 
       <Pad>
-        <Link href="/team/new" style={{ textDecoration: "none" }}>
-          <Button variant="primary" style={{ width: "100%" }}>+ Invite teammate</Button>
-        </Link>
+        <Button href="/team/new" variant="primary">+ Invite teammate</Button>
       </Pad>
 
       {/* Desktop: one roster table */}
@@ -74,7 +72,7 @@ export async function OwnerTeam() {
             m.rate ? `$${m.rate}/h` : "—",
             m.pending ? (
               <form key="s" action={activateMember.bind(null, m.id)}>
-                <Button variant="primary" type="submit" style={{ padding: "6px 12px", fontSize: 12 }}>Confirm invite</Button>
+                <Button variant="primary" size="sm" type="submit">Confirm invite</Button>
               </form>
             ) : (
               <Pill key="s" tone="good">Active</Pill>

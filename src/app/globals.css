@@ -244,6 +244,15 @@ body {
   letter-spacing: -0.005em;
   cursor: pointer;
   text-align: center;
+  text-decoration: none;
+}
+/* Small variant for inline/table-row actions */
+.v2-btn.sm {
+  display: inline-flex;
+  width: auto;
+  min-height: 0;
+  padding: 6px 12px;
+  font-size: 12px;
 }
 .v2-btn.primary {
   background: var(--v2-accent);

@@ -141,12 +141,23 @@ export function Rule({ soft, className }: { soft?: boolean; className?: string }
 /* ── Button ── */
 export function Button({
   variant,
+  size,
+  href,
   className,
   children,
   ...rest
-}: ButtonProps & { variant?: "primary" | "ghost" | "danger" }) {
+}: ButtonProps & { variant?: "primary" | "ghost" | "danger"; size?: "sm"; href?: string }) {
+  const cls = cn("v2-btn", variant, size === "sm" && "sm", className);
+  // When given an href, render a styled link — avoids invalid <a><button> nesting.
+  if (href) {
+    return (
+      <Link href={href} className={cls}>
+        {children}
+      </Link>
+    );
+  }
   return (
-    <button type="button" className={cn("v2-btn", variant, className)} {...rest}>
+    <button type="button" className={cls} {...rest}>
       {children}
     </button>
   );
