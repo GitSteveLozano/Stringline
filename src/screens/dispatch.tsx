@@ -55,6 +55,11 @@ export async function Dispatch() {
           <div className="v2-quiet v2-body">
             {money0(summary.onRentValue)}/day of gear on site across your jobs.
           </div>
+          <Link href="/assets" style={{ textDecoration: "none" }}>
+            <span className="v2-mono" style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              View equipment yard →
+            </span>
+          </Link>
         </Stack>
       </Pad>
 
