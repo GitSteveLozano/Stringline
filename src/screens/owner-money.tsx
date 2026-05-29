@@ -41,7 +41,9 @@ export async function OwnerMoney() {
 
       <SectionBar>
         <Eyebrow>Receivables</Eyebrow>
-        <Mono>{ar.length}</Mono>
+        <Link href="/invoices" className="v2-mono" style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", textDecoration: "none" }}>
+          AR aging →
+        </Link>
       </SectionBar>
       <div>
         {ar.map((r) => {
