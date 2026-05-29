@@ -67,6 +67,11 @@ export async function ProjectDetail({ id }: { id: string }) {
           {isLost && (
             <Pill tone="bad">Lost · {LOST_LABEL[lostReason] ?? lostReason}</Pill>
           )}
+          <Link href={`/project/${p.id}/photos`} style={{ textDecoration: "none" }}>
+            <span className="v2-mono" style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              Site photos →
+            </span>
+          </Link>
         </Stack>
       </Pad>
 
