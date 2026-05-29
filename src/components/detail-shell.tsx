@@ -16,7 +16,7 @@ export function DetailShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="v2-frame">
+    <div className="v2-frame v2-frame-wide">
       <Screen dark={dark}>
         <AppBar
           title={title}

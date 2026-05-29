@@ -651,6 +651,11 @@ body {
     gap: 24px;
     align-items: start;
   }
+  /* Drill-in shells (project detail, takeoff) read as a wide document,
+     not a phone strip, once there's room. */
+  .v2-frame-wide {
+    max-width: 860px;
+  }
 }
 
 

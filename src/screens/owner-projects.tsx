@@ -26,6 +26,7 @@ export async function OwnerProjects() {
           <Button variant="primary" style={{ width: "100%" }}>+ New project</Button>
         </Link>
       </Pad>
+      <div className="v2-cols">
       {BUCKETS.map((b) => {
         const items = projects.filter(b.match);
         if (items.length === 0) return null;
@@ -52,6 +53,7 @@ export async function OwnerProjects() {
           </div>
         );
       })}
+      </div>
     </>
   );
 }
