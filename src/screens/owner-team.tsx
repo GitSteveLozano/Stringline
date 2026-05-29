@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pad, Card, Spread, Eyebrow, SectionBar, Mono, Row, Pill, Button } from "@/components/ui";
+import { Pad, Card, Spread, Eyebrow, SectionBar, Mono, Row, Pill, Button, DataTable } from "@/components/ui";
 import { Icon } from "@/components/icon";
 import { getTeam } from "@/server/team";
 import { getPendingApprovalCount } from "@/server/approvals";
@@ -50,30 +50,53 @@ export async function OwnerTeam() {
         </Link>
       </Pad>
 
-      <div className="v2-cols">
-        <section>
-          <SectionBar>
-            <Eyebrow>Office</Eyebrow>
-            <Mono>{office.length}</Mono>
-          </SectionBar>
-          <div>
-            {office.map((m) => (
-              <MemberRow key={m.id} m={m} />
-            ))}
-          </div>
-        </section>
+      {/* Desktop: one roster table */}
+      <DataTable
+        columns={[
+          { label: "Name" },
+          { label: "Role", width: "160px" },
+          { label: "Group", width: "120px" },
+          { label: "Rate", num: true, width: "110px" },
+          { label: "Status", width: "150px" },
+        ]}
+        rows={team.map((m) => ({
+          id: m.id,
+          cells: [
+            <span key="n" className="v2-gtd-strong">{m.name}</span>,
+            m.role,
+            m.group,
+            m.rate ? `$${m.rate}/h` : "—",
+            m.pending ? (
+              <form key="s" action={activateMember.bind(null, m.id)}>
+                <Button variant="primary" type="submit" style={{ padding: "6px 12px", fontSize: 12 }}>Confirm invite</Button>
+              </form>
+            ) : (
+              <Pill key="s" tone="good">Active</Pill>
+            ),
+          ],
+        }))}
+      />
 
-        <section>
-          <SectionBar>
-            <Eyebrow>Field</Eyebrow>
-            <Mono>{field.length}</Mono>
-          </SectionBar>
-          <div>
-            {field.map((m) => (
-              <MemberRow key={m.id} m={m} />
-            ))}
-          </div>
-        </section>
+      {/* Mobile: grouped cards */}
+      <div className="v2-only-mobile">
+        <SectionBar>
+          <Eyebrow>Office</Eyebrow>
+          <Mono>{office.length}</Mono>
+        </SectionBar>
+        <div>
+          {office.map((m) => (
+            <MemberRow key={m.id} m={m} />
+          ))}
+        </div>
+        <SectionBar>
+          <Eyebrow>Field</Eyebrow>
+          <Mono>{field.length}</Mono>
+        </SectionBar>
+        <div>
+          {field.map((m) => (
+            <MemberRow key={m.id} m={m} />
+          ))}
+        </div>
       </div>
     </>
   );
