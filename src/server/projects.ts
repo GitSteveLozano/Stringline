@@ -76,6 +76,16 @@ export async function getProject(id: string): Promise<Project | null> {
   return row ? toViewModel(row) : null;
 }
 
+/** Minimal client list for the new-project picker. */
+export async function listClients(): Promise<{ id: string; name: string }[]> {
+  const workspaceId = await getActiveWorkspaceId();
+  return db.client.findMany({
+    where: { workspaceId },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
+}
+
 /** Aggregates the owner dashboard cares about. */
 export async function getDashboard() {
   const workspaceId = await getActiveWorkspaceId();
