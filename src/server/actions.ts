@@ -253,6 +253,77 @@ export async function advanceProjectStatus(id: string, to: ProjectStatus) {
   revalidatePath("/owner/money");
 }
 
+// ── Invoicing ──────────────────────────────────────────────────
+
+/** Contract value = base + accepted change orders. */
+async function contractTotal(projectId: string): Promise<number> {
+  const project = await db.project.findUnique({
+    where: { id: projectId },
+    select: { contractValue: true, changeOrders: { where: { status: "ACCEPTED" }, select: { valueDelta: true } } },
+  });
+  if (!project) return 0;
+  const base = Number(project.contractValue ?? 0);
+  return base + project.changeOrders.reduce((s, c) => s + Number(c.valueDelta), 0);
+}
+
+/**
+ * Generate the final invoice for a completed project: one 100% milestone for
+ * the full contract (base + accepted COs), due in 30 days. Only for DONE
+ * projects without an invoice yet; the unpaid balance shows up in receivables.
+ */
+export async function generateInvoice(projectId: string) {
+  const workspaceId = await getActiveWorkspaceId();
+  const project = await db.project.findFirst({
+    where: { id: projectId, workspaceId },
+    select: { status: true, invoices: { select: { id: true }, take: 1 } },
+  });
+  if (!project || project.status !== "DONE" || project.invoices.length > 0) return;
+
+  const total = await contractTotal(projectId);
+  const dueOn = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+  await db.invoice.create({
+    data: {
+      projectId,
+      number: `INV-${projectId.slice(-6).toUpperCase()}`,
+      amount: total,
+      status: "SENT",
+      dueOn,
+      milestones: { create: [{ label: "Final", percent: 100, amount: total }] },
+    },
+  });
+
+  revalidatePath(`/project/${projectId}`);
+  revalidatePath("/owner");
+  revalidatePath("/owner/money");
+}
+
+/**
+ * Record payment on a project's invoice: settle all milestones, mark the
+ * invoice paid, and close the project out to PAID.
+ */
+export async function markInvoicePaid(projectId: string) {
+  const workspaceId = await getActiveWorkspaceId();
+  const project = await db.project.findFirst({
+    where: { id: projectId, workspaceId },
+    select: { status: true, invoices: { select: { id: true } } },
+  });
+  if (!project || project.invoices.length === 0) return;
+
+  const now = new Date();
+  const invoiceIds = project.invoices.map((i) => i.id);
+  await db.$transaction([
+    db.milestone.updateMany({ where: { invoiceId: { in: invoiceIds }, paidOn: null }, data: { paidOn: now } }),
+    db.invoice.updateMany({ where: { id: { in: invoiceIds } }, data: { status: "PAID" } }),
+    db.project.update({ where: { id: projectId }, data: { status: "PAID" } }),
+  ]);
+
+  revalidatePath(`/project/${projectId}`);
+  revalidatePath("/owner");
+  revalidatePath("/owner/projects");
+  revalidatePath("/owner/money");
+}
+
 // ── Change orders ──────────────────────────────────────────────
 
 /**
