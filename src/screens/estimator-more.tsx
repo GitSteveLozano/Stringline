@@ -42,23 +42,25 @@ export async function EstimatorMore() {
         </div>
       </div>
 
-      {GROUPS.map((g) => (
-        <div key={g.heading}>
-          <SectionBar>
-            <Eyebrow>{g.heading}</Eyebrow>
-          </SectionBar>
-          <div>
-            {g.items.map((it) => (
-              <Row key={it.label} lead={<Icon name={it.icon} size={20} />}>
-                <div style={{ flex: 1, minWidth: 0 }} className="v2-h3">
-                  {it.label}
-                </div>
-                <Icon name="chevron" size={16} />
-              </Row>
-            ))}
+      <div className="v2-cols">
+        {GROUPS.map((g) => (
+          <div key={g.heading}>
+            <SectionBar>
+              <Eyebrow>{g.heading}</Eyebrow>
+            </SectionBar>
+            <div>
+              {g.items.map((it) => (
+                <Row key={it.label} lead={<Icon name={it.icon} size={20} />}>
+                  <div style={{ flex: 1, minWidth: 0 }} className="v2-h3">
+                    {it.label}
+                  </div>
+                  <Icon name="chevron" size={16} />
+                </Row>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
 
       <div className="v2-pad">
         <div className="v2-quiet" style={{ fontFamily: "var(--v2-font-mono)", fontSize: 11 }}>

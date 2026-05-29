@@ -19,6 +19,7 @@ export async function EstimatorQueue() {
         </Stack>
       </Pad>
 
+      <div className="v2-cols">
       {stages.map((stage) => (
         <div key={stage.key}>
           <SectionBar>
@@ -51,6 +52,7 @@ export async function EstimatorQueue() {
           )}
         </div>
       ))}
+      </div>
     </>
   );
 }
