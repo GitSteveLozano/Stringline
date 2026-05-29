@@ -1,12 +1,36 @@
-import { SectionBar, Eyebrow, Mono, Row, Pill } from "@/components/ui";
+import { SectionBar, Eyebrow, Mono, Row, Pill, DataTable } from "@/components/ui";
 import { getForemanCrew } from "@/server/foreman";
 
 // Crew roster grouped by site. Foreman view — status, not dollars.
 export async function ForemanCrew() {
   const sites = await getForemanCrew();
+  const allCrew = sites.flatMap(({ site, members }) => members.map((m) => ({ ...m, siteName: site.name })));
 
   return (
     <>
+      {/* Desktop: one crew table */}
+      <DataTable
+        columns={[
+          { label: "Crew" },
+          { label: "Role", width: "150px" },
+          { label: "Site" },
+          { label: "Hours", num: true, width: "110px" },
+          { label: "Status", width: "130px" },
+        ]}
+        rows={allCrew.map((m) => ({
+          id: m.id,
+          cells: [
+            <span key="n" className="v2-gtd-strong">{m.name}</span>,
+            m.role,
+            m.siteName,
+            `${m.hoursWeek}h`,
+            <Pill key="s" tone={m.clockedIn ? "live" : undefined} dot={m.clockedIn}>{m.clockedIn ? "On site" : "Off"}</Pill>,
+          ],
+        }))}
+      />
+
+      {/* Mobile: grouped by site */}
+      <div className="v2-only-mobile">
       {sites.map(({ site, members }) => {
         if (members.length === 0) return null;
         const here = members.filter((m) => m.clockedIn).length;
@@ -34,6 +58,7 @@ export async function ForemanCrew() {
           </div>
         );
       })}
+      </div>
     </>
   );
 }
