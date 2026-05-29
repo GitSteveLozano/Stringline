@@ -115,6 +115,22 @@ export async function decideApproval(id: string, decision: "APPROVED" | "DENIED"
   revalidatePath("/owner");
 }
 
+// ── Team ───────────────────────────────────────────────────────
+
+/** Confirm an invited member onto the team (clears the pending flag). */
+export async function activateMember(membershipId: string) {
+  const workspaceId = await getActiveWorkspaceId();
+  const membership = await db.membership.findFirst({
+    where: { id: membershipId, workspaceId, pending: true },
+    select: { id: true },
+  });
+  if (!membership) return;
+
+  await db.membership.update({ where: { id: membershipId }, data: { pending: false } });
+  revalidatePath("/owner/team");
+  revalidatePath("/owner");
+}
+
 // ── Project lifecycle ──────────────────────────────────────────
 
 const CLIENT_KINDS = ["BUILDER", "GC", "OWNER", "ARCHITECT"];

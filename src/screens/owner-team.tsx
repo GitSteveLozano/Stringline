@@ -1,8 +1,32 @@
 import Link from "next/link";
-import { Pad, Card, Spread, Eyebrow, SectionBar, Mono, Row, Pill } from "@/components/ui";
+import { Pad, Card, Spread, Eyebrow, SectionBar, Mono, Row, Pill, Button } from "@/components/ui";
 import { Icon } from "@/components/icon";
 import { getTeam } from "@/server/team";
 import { getPendingApprovalCount } from "@/server/approvals";
+import { activateMember } from "@/server/actions";
+import type { TeamMember } from "@/lib/demo-data";
+
+function MemberRow({ m }: { m: TeamMember }) {
+  return (
+    <Row lead={<span className="v2-mono" style={{ fontWeight: 700 }}>{m.initials}</span>}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="v2-h3">{m.name}</div>
+        <div className="v2-quiet" style={{ fontSize: 13, marginTop: 2 }}>
+          {m.role}
+          {m.rate ? ` · $${m.rate}/h` : ""}
+        </div>
+      </div>
+      {m.pending && (
+        <>
+          <Pill>Invited</Pill>
+          <form action={activateMember.bind(null, m.id)}>
+            <Button variant="primary" type="submit">Confirm</Button>
+          </form>
+        </>
+      )}
+    </Row>
+  );
+}
 
 export async function OwnerTeam() {
   const [team, pendingApprovals] = await Promise.all([getTeam(), getPendingApprovalCount()]);
@@ -32,12 +56,7 @@ export async function OwnerTeam() {
       </SectionBar>
       <div>
         {office.map((m) => (
-          <Row key={m.id} lead={<span className="v2-mono" style={{ fontWeight: 700 }}>{m.initials}</span>}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="v2-h3">{m.name}</div>
-              <div className="v2-quiet" style={{ fontSize: 13, marginTop: 2 }}>{m.role}</div>
-            </div>
-          </Row>
+          <MemberRow key={m.id} m={m} />
         ))}
       </div>
 
@@ -47,16 +66,7 @@ export async function OwnerTeam() {
       </SectionBar>
       <div>
         {field.map((m) => (
-          <Row key={m.id} lead={<span className="v2-mono" style={{ fontWeight: 700 }}>{m.initials}</span>}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="v2-h3">{m.name}</div>
-              <div className="v2-quiet" style={{ fontSize: 13, marginTop: 2 }}>
-                {m.role}
-                {m.rate ? ` · $${m.rate}/h` : ""}
-              </div>
-            </div>
-            {m.pending && <Pill>Invited</Pill>}
-          </Row>
+          <MemberRow key={m.id} m={m} />
         ))}
       </div>
     </>
