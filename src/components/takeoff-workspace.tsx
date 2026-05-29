@@ -13,10 +13,13 @@ import {
   type Measurement,
   type Confidence,
 } from "@/lib/takeoff";
-import { verifySheetScale, saveMeasurement, priceTakeoff, saveAiTakeoff } from "@/server/actions";
+import { verifySheetScale, saveMeasurement, priceTakeoff, saveAiTakeoff, deleteMeasurement } from "@/server/actions";
 import type { TakeoffSheet, TakeoffMeasurement } from "@/server/estimator";
 
 const usd = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
+
+/** Temp ids (pre-save) start with m-/ai-; persisted rows carry a cuid. */
+const isPersisted = (id: string) => !id.startsWith("m-") && !id.startsWith("ai-");
 
 function confTone(c?: Confidence): "good" | "bad" | undefined {
   if (c === "HIGH") return "good";
@@ -86,14 +89,20 @@ export function TakeoffWorkspace({
     if (current.length < 3) return;
     const sf = areaSf(current, scale);
     const points = current;
-    setMeasurements((m) => [
-      ...m,
-      { id: `m-${Date.now()}`, scope: activeScope, points, sf, source: "manual" },
-    ]);
+    const tempId = `m-${Date.now()}`;
+    setMeasurements((m) => [...m, { id: tempId, scope: activeScope, points, sf, source: "manual" }]);
     setCurrent([]);
     if (sheets[0]) {
-      void saveMeasurement({ projectId, sheetId: sheets[0].id, scope: activeScope, points, sf });
+      // Reconcile the temp id with the persisted row id so it can be deleted.
+      void saveMeasurement({ projectId, sheetId: sheets[0].id, scope: activeScope, points, sf }).then((realId) =>
+        setMeasurements((m) => m.map((x) => (x.id === tempId ? { ...x, id: realId } : x)))
+      );
     }
+  }
+
+  function removeMeasurement(id: string) {
+    setMeasurements((m) => m.filter((x) => x.id !== id));
+    if (isPersisted(id)) void deleteMeasurement(id);
   }
 
   function runAi() {
@@ -101,11 +110,17 @@ export function TakeoffWorkspace({
     setMeasurements((m) => [...m.filter((x) => x.source !== "ai"), ...draft]);
     setAiRan(true);
     if (sheets[0]) {
+      // Replace the local AI rows with the persisted ones (real ids) once saved.
       void saveAiTakeoff({
         projectId,
         sheetId: sheets[0].id,
         measurements: draft.map((d) => ({ scope: d.scope, points: d.points, sf: d.sf, confidence: d.confidence })),
-      });
+      }).then((saved) =>
+        setMeasurements((m) => [
+          ...m.filter((x) => x.source !== "ai"),
+          ...saved.map((s) => ({ id: s.id, scope: s.scope, points: s.points, sf: s.sf, source: "ai" as const, confidence: s.confidence })),
+        ])
+      );
     }
   }
 
@@ -317,8 +332,17 @@ export function TakeoffWorkspace({
               <div className="v2-h3">{m.scope}</div>
               <Mono>{m.source === "ai" ? "AI" : "manual"}</Mono>
             </div>
-            <Mono>{m.sf.toLocaleString()} sf</Mono>
+            <Mono>{m.sf.toLocaleString()} {m.scope === "CAULK" ? "lf" : "sf"}</Mono>
             {m.confidence && <Pill tone={confTone(m.confidence)}>{m.confidence}</Pill>}
+            <button
+              type="button"
+              aria-label={`Delete ${m.scope} measurement`}
+              onClick={() => removeMeasurement(m.id)}
+              className="v2-pill"
+              style={{ cursor: "pointer" }}
+            >
+              ✕
+            </button>
           </div>
         ))}
       </div>
