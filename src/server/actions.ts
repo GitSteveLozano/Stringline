@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { getActiveWorkspaceId } from "./workspace";
 import { weekStart } from "./dates";
 import { LIFECYCLE } from "@/lib/demo-data";
-import type { ProjectStatus } from "@prisma/client";
+import type { ProjectStatus, LostReason } from "@prisma/client";
 
 // ── Foreman ────────────────────────────────────────────────────
 
@@ -170,6 +170,39 @@ export async function createProject(formData: FormData) {
   redirect(`/project/${project.id}`);
 }
 
+
+const LOST_REASONS = ["PRICE", "TIMING", "SCOPE", "GHOSTED", "COMPETITOR", "OTHER"];
+
+/**
+ * Mark a bid lost: stamp the reason (+ optional note) and archive it. Only
+ * pre-acceptance bids (Drafting / Sent) can be lost; once work is accepted it
+ * runs its lifecycle instead. The estimator Queue reads lostReason to bucket
+ * these into "Lost" and compute win rate.
+ */
+export async function markProjectLost(id: string, formData: FormData) {
+  const workspaceId = await getActiveWorkspaceId();
+  const project = await db.project.findFirst({
+    where: { id, workspaceId },
+    select: { status: true },
+  });
+  if (!project) return;
+  if (project.status !== "DRAFTING" && project.status !== "SENT") return;
+
+  const reasonRaw = String(formData.get("reason") ?? "").toUpperCase();
+  const reason = (LOST_REASONS.includes(reasonRaw) ? reasonRaw : "OTHER") as LostReason;
+  const note = String(formData.get("note") ?? "").trim() || null;
+
+  await db.project.update({
+    where: { id },
+    data: { lostReason: reason, lostNote: note, status: "ARCHIVED" },
+  });
+
+  revalidatePath(`/project/${id}`);
+  revalidatePath("/owner");
+  revalidatePath("/owner/projects");
+  revalidatePath("/estimator");
+  revalidatePath("/estimator/queue");
+}
 
 /**
  * Advance a project one step along the lifecycle (Drafting → … → Paid).

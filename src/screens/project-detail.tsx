@@ -1,8 +1,17 @@
 import Link from "next/link";
-import { Pad, Stack, Eyebrow, H1, H3, Spread, Pill, SectionBar, Mono, Button, Rule } from "@/components/ui";
+import { Pad, Stack, Eyebrow, H1, H3, Field, Spread, Pill, SectionBar, Mono, Button, Rule } from "@/components/ui";
 import { LIFECYCLE, money0, statusLabel, healthLabel } from "@/lib/demo-data";
 import { getProjectDetail } from "@/server/projects";
-import { advanceProjectStatus } from "@/server/actions";
+import { advanceProjectStatus, markProjectLost } from "@/server/actions";
+
+const LOST_LABEL: Record<string, string> = {
+  PRICE: "Price",
+  TIMING: "Timing",
+  SCOPE: "Scope",
+  GHOSTED: "Ghosted",
+  COMPETITOR: "Lost to competitor",
+  OTHER: "Other",
+};
 
 /** Lifecycle state machine — same screen across Drafting → Paid; content shifts with status. */
 export async function ProjectDetail({ id }: { id: string }) {
@@ -18,7 +27,9 @@ export async function ProjectDetail({ id }: { id: string }) {
     );
   }
 
-  const { project: p, budget, changeOrders, milestones } = detail;
+  const { project: p, budget, changeOrders, milestones, lostReason, lostNote } = detail;
+  const isLost = lostReason != null;
+  const canLose = !isLost && (p.status === "DRAFTING" || p.status === "SENT");
   const acceptedCOs = changeOrders.filter((c) => c.status === "ACCEPTED");
   const coTotal = acceptedCOs.reduce((s, c) => s + c.delta, 0);
   const contract = p.contractValue + coTotal;
@@ -46,6 +57,9 @@ export async function ProjectDetail({ id }: { id: string }) {
           <div className="v2-quiet v2-body">
             {p.client} · {p.address}
           </div>
+          {isLost && (
+            <Pill tone="bad">Lost · {LOST_LABEL[lostReason] ?? lostReason}</Pill>
+          )}
         </Stack>
       </Pad>
 
@@ -203,6 +217,33 @@ export async function ProjectDetail({ id }: { id: string }) {
             <form action={advanceProjectStatus.bind(null, id, "PAID")}>
               <Button variant="primary" type="submit" style={{ width: "100%" }}>Generate invoice</Button>
             </form>
+          )}
+
+          {canLose && (
+            <form action={markProjectLost.bind(null, id)}>
+              <Stack gap="tight">
+                <Eyebrow>Didn&apos;t win it?</Eyebrow>
+                <label style={{ display: "block" }}>
+                  <select className="v2-field" name="reason" defaultValue="PRICE">
+                    <option value="PRICE">Lost on price</option>
+                    <option value="TIMING">Lost on timing</option>
+                    <option value="SCOPE">Lost on scope</option>
+                    <option value="COMPETITOR">Lost to a competitor</option>
+                    <option value="GHOSTED">Client ghosted</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </label>
+                <Field name="note" placeholder="Note (optional)" />
+                <Button variant="ghost" type="submit" style={{ width: "100%" }}>Mark lost</Button>
+              </Stack>
+            </form>
+          )}
+
+          {isLost && (
+            <div className="v2-quiet v2-body">
+              Marked lost · {LOST_LABEL[lostReason] ?? lostReason}
+              {lostNote ? ` — ${lostNote}` : ""}
+            </div>
           )}
         </Stack>
       </Pad>
