@@ -4,13 +4,33 @@
  *
  * Idempotent: wipes the demo workspace and reseeds. Run with `npm run db:seed`.
  */
-import { PrismaClient, BaseRole, ProjectStatus, ProjectHealth, ProjectType } from "@prisma/client";
+import {
+  PrismaClient,
+  BaseRole,
+  ProjectStatus,
+  ProjectHealth,
+  ProjectType,
+  FieldKind,
+  ApprovalKind,
+  TxnType,
+  Confidence,
+  MeasurementSource,
+  Anomaly,
+} from "@prisma/client";
 import {
   projects as fxProjects,
   team as fxTeam,
   crew as fxCrew,
   projectExtras,
+  fieldItems as fxFieldItems,
+  todayLog as fxTodayLog,
+  workerScope as fxWorkerScope,
+  workerWeek as fxWorkerWeek,
+  workerPhotos as fxWorkerPhotos,
+  approvals as fxApprovals,
+  money as fxMoney,
 } from "../src/lib/demo-data";
+import { SCOPES, demoSheets, aiDraft } from "../src/lib/takeoff";
 
 const db = new PrismaClient();
 
@@ -24,6 +44,37 @@ const dayMs = 24 * 60 * 60 * 1000;
 const today = new Date();
 const isoTime = (h: number, m: number) =>
   `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+
+/** Parse a fixture clock string like "12:48 PM" into a Date earlier today. */
+function clockToday(t: string): Date {
+  const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  const d = new Date(today);
+  if (m) {
+    let h = Number(m[1]) % 12;
+    if (/PM/i.test(m[3])) h += 12;
+    d.setHours(h, Number(m[2]), 0, 0);
+  }
+  return d;
+}
+
+/** The Monday→Friday dates of the current work week. */
+function workWeek(): Date[] {
+  const monday = new Date(today);
+  const dow = (monday.getDay() + 6) % 7; // 0 = Monday
+  monday.setDate(monday.getDate() - dow);
+  monday.setHours(8, 0, 0, 0);
+  return Array.from({ length: 5 }, (_, i) => new Date(monday.getTime() + i * dayMs));
+}
+
+/** Resolve a fixture display name ("Diego F.", "Marcus Lee") to a seeded user. */
+function resolveUser(byName: Map<string, string>, display: string): string | undefined {
+  if (byName.has(display)) return byName.get(display);
+  const first = display.split(/[\s.]/)[0].toLowerCase();
+  for (const [name, id] of byName) {
+    if (name.toLowerCase().startsWith(first)) return id;
+  }
+  return undefined;
+}
 
 async function main() {
   // ── Reset — full wipe for a clean, single-tenant dev seed ────
@@ -106,6 +157,7 @@ async function main() {
   }
 
   // ── Projects (+ schedule, cached rollups, budget, COs, invoices) ──
+  const projectIdByFixtureId = new Map<string, string>();
   for (const p of fxProjects) {
     const startedOn =
       p.dayOf != null ? new Date(today.getTime() - (p.dayOf - 1) * dayMs) : null;
@@ -127,6 +179,7 @@ async function main() {
         progress: p.progress,
       },
     });
+    projectIdByFixtureId.set(p.id, project.id);
 
     const extras = projectExtras[p.id];
     if (!extras) continue;
@@ -183,31 +236,229 @@ async function main() {
     }
   }
 
-  // ── Open time entries → "crew on the clock" on the owner home ──
-  const projectIdByFixtureId = new Map<string, string>();
-  for (const p of fxProjects) {
-    const row = await db.project.findFirst({
-      where: { workspaceId: ws.id, name: p.name },
-      select: { id: true },
-    });
-    if (row) projectIdByFixtureId.set(p.id, row.id);
-  }
-  // Match clocked-in crew to known team users by name where possible.
-  const nameAlias: Record<string, string> = { "Tomás Reyes": "Marcus Lee" };
+  // Map a fixture "site" word (e.g. "Hillcrest") to a seeded project id.
+  const siteToProjectId = (site: string): string | undefined => {
+    const fx = fxProjects.find((p) => p.name.toLowerCase().includes(site.toLowerCase()));
+    return fx ? projectIdByFixtureId.get(fx.id) : undefined;
+  };
+
+  // ── Time entries: this week's hours + who's on the clock now ──
+  // Distributes each crew member's weekly hours across the work week.
+  // Clocked-in members get an open entry for today (drives "crew on clock").
+  const week = workWeek();
+  const todayIdx = week.findIndex((d) => d.toDateString() === today.toDateString());
+  const lastIdx = todayIdx >= 0 ? todayIdx : week.length - 1;
   for (const c of fxCrew) {
-    if (!c.clockedIn) continue;
-    const userId = userByName.get(c.name) ?? userByName.get(nameAlias[c.name] ?? "");
+    const userId = resolveUser(userByName, c.name);
     const projectId = projectIdByFixtureId.get(c.project);
     if (!userId || !projectId) continue;
-    await db.timeEntry.create({
+    const daysWorked = lastIdx + 1;
+    const perDay = Math.round((c.hoursWeek / daysWorked) * 10) / 10;
+    for (let i = 0; i <= lastIdx; i++) {
+      if (i === todayIdx && c.clockedIn) {
+        await db.timeEntry.create({
+          data: { projectId, userId, date: week[i], clockIn: isoTime(7, 30), hours: 0, source: "AUTO" },
+        });
+      } else {
+        await db.timeEntry.create({
+          data: {
+            projectId,
+            userId,
+            date: week[i],
+            clockIn: isoTime(7, 0),
+            clockOut: isoTime(15, 30),
+            hours: perDay,
+            source: "AUTO",
+            approval: "FOREMAN_APPROVED",
+            anomalies: c.id === "w5" && i === 0 ? [Anomaly.OVERTIME] : [],
+          },
+        });
+      }
+    }
+  }
+
+  // ── Worker scope: today's assignment + ordered checklist steps ──
+  const hillcrestId = projectIdByFixtureId.get("p-hillcrest")!;
+  await db.assignment.create({
+    data: {
+      projectId: hillcrestId,
+      date: today,
+      scope: "EPS · East elevation",
+      sqft: fxWorkerScope.goalSqft,
+      doneSqft: fxWorkerScope.doneSqft,
+      status: "CONFIRMED",
+      crewUserIds: [userByName.get("Marcus Lee")!],
+      scopedById: userByName.get("Ana Castillo")!,
+      scopedAt: clockToday(fxWorkerScope.scopedAt),
+      onSiteNote: fxWorkerScope.onSite,
+      steps: {
+        create: fxWorkerScope.steps.map((s, i) => ({
+          label: s.label,
+          sort: i,
+          done: s.done,
+          current: Boolean((s as { now?: boolean }).now),
+        })),
+      },
+    },
+  });
+
+  // ── Foreman daily log (today, unsubmitted) ───────────────────
+  await db.dailyLog.create({
+    data: {
+      projectId: hillcrestId,
+      foremanId: userByName.get("Ana Castillo")!,
+      date: today,
+      submitted: fxTodayLog.submitted,
+      weatherJson: { summary: fxTodayLog.weather },
+      crewUserIds: [userByName.get("Marcus Lee")!, userByName.get("Diego Fontana")!],
+      crewHours: fxTodayLog.crewHours,
+      photoCount: fxTodayLog.photos,
+      sqftDone: fxTodayLog.sqftDone,
+      sqftPlanned: fxTodayLog.sqftPlanned,
+      narrative: fxTodayLog.narrative,
+    },
+  });
+
+  // ── Field intake (blockers / photos / notes) ─────────────────
+  const fieldKind = (k: string): FieldKind =>
+    k === "Blocker" ? FieldKind.BLOCKER : k === "Photo" ? FieldKind.PHOTO : FieldKind.NOTE;
+  for (const f of fxFieldItems) {
+    const userId = resolveUser(userByName, f.who);
+    const projectId = siteToProjectId(f.site);
+    if (!userId || !projectId) continue;
+    await db.fieldReport.create({
       data: {
         projectId,
         userId,
-        date: today,
-        clockIn: isoTime(7, 30),
-        clockOut: null,
-        hours: 0,
-        source: "AUTO",
+        kind: fieldKind(f.kind),
+        detail: f.detail,
+        resolved: f.resolved ?? false,
+        createdAt: clockToday(f.time),
+      },
+    });
+  }
+
+  // ── Worker photo log (scope-tagged) ──────────────────────────
+  const marcusId = userByName.get("Marcus Lee")!;
+  for (const group of fxWorkerPhotos) {
+    const dayBase = group.day.startsWith("Yesterday")
+      ? new Date(today.getTime() - dayMs)
+      : today;
+    for (const item of group.items) {
+      const takenAt = item.time ? clockToday(item.time) : dayBase;
+      if (group.day.startsWith("Yesterday")) takenAt.setDate(dayBase.getDate());
+      await db.photo.create({
+        data: { projectId: hillcrestId, userId: marcusId, tag: item.tag, takenAt },
+      });
+    }
+  }
+
+  // ── Approvals queue (materials / OT / equipment) ─────────────
+  const approvalKind = (k: string): ApprovalKind =>
+    k === "Materials" ? ApprovalKind.MATERIALS : k.includes("Time") ? ApprovalKind.TIME_OT : ApprovalKind.EQUIPMENT;
+  const ageToDate = (age: string): Date => {
+    const m = age.match(/(\d+)\s*([mh])/);
+    if (!m) return today;
+    const ms = Number(m[1]) * (m[2] === "h" ? 3600_000 : 60_000);
+    return new Date(today.getTime() - ms);
+  };
+  for (const a of fxApprovals) {
+    const userId = resolveUser(userByName, a.who);
+    const projectId = siteToProjectId(a.site);
+    if (!userId || !projectId) continue;
+    const isHours = /hr/i.test(a.amount);
+    const amount = Number(a.amount.replace(/[^0-9.]/g, "")) || 0;
+    await db.approval.create({
+      data: {
+        projectId,
+        requesterUserId: userId,
+        kind: approvalKind(a.kind),
+        detail: a.detail,
+        amount,
+        unit: isHours ? "hrs" : "USD",
+        urgent: a.urgent ?? false,
+        createdAt: ageToDate(a.age),
+      },
+    });
+  }
+
+  // ── Pricing book (scope items / assemblies) ──────────────────
+  const rates: Record<string, { unit: string; cost: number; sell: number }> = {
+    EPS: { unit: "sqft", cost: 3.2, sell: 5.6 },
+    BASE: { unit: "sqft", cost: 2.1, sell: 3.9 },
+    STONE: { unit: "sqft", cost: 9.4, sell: 16.5 },
+    CAULK: { unit: "lf", cost: 1.3, sell: 2.8 },
+  };
+  for (const s of SCOPES) {
+    const r = rates[s.code] ?? { unit: "sqft", cost: 2, sell: 4 };
+    await db.scopeItem.create({
+      data: {
+        workspaceId: ws.id,
+        code: s.code,
+        name: s.name,
+        unit: r.unit,
+        costRate: r.cost,
+        sellRate: r.sell,
+        color: s.color,
+      },
+    });
+  }
+
+  // ── Takeoff sheets + AI-detected measurements (scale gate) ───
+  for (const [fixtureId, sheets] of Object.entries(demoSheets)) {
+    const projectId = projectIdByFixtureId.get(fixtureId);
+    if (!projectId) continue;
+    for (let si = 0; si < sheets.length; si++) {
+      const s = sheets[si];
+      const sheet = await db.sheet.create({
+        data: {
+          projectId,
+          name: s.name,
+          scale: s.scale,
+          scaleConfidence: s.confidence as Confidence,
+          // HIGH-confidence scales are pre-verified; MED/LOW await the gate.
+          scaleVerifiedAt: s.confidence === "HIGH" ? new Date(today.getTime() - dayMs) : null,
+          sort: si,
+        },
+      });
+      // Seed the first sheet of each project with the canned AI takeoff.
+      if (si === 0) {
+        for (const m of aiDraft(s.scale)) {
+          await db.measurement.create({
+            data: {
+              projectId,
+              sheetId: sheet.id,
+              code: m.scope,
+              qty: m.sf,
+              unit: "sqft",
+              pointsJson: m.points,
+              confidence: m.confidence as Confidence,
+              source: MeasurementSource.AI,
+            },
+          });
+        }
+      }
+    }
+  }
+
+  // ── Cash ledger → owner money tiles ──────────────────────────
+  const wkStart = week[0];
+  const txns: { type: TxnType; amount: number; description: string; date: Date; site?: string }[] = [
+    { type: TxnType.PAYMENT_IN, amount: 90000, description: "Hillcrest — midpoint draw", date: new Date(today.getTime() - 12 * dayMs), site: "Hillcrest" },
+    { type: TxnType.PAYMENT_IN, amount: 52800, description: "Aspen Ridge — deposit", date: new Date(today.getTime() - 3 * dayMs), site: "Aspen" },
+    { type: TxnType.MATERIAL_COST, amount: 60000, description: "EPS + basecoat — supplier", date: new Date(today.getTime() - 10 * dayMs), site: "Hillcrest" },
+    { type: TxnType.EQUIPMENT, amount: 19440, description: "Scissor lift + scaffold rental", date: new Date(today.getTime() - 5 * dayMs), site: "Hillcrest" },
+    { type: TxnType.PAYROLL, amount: fxMoney.payrollThisWeek, description: "Crew payroll — this week", date: wkStart },
+  ];
+  for (const t of txns) {
+    await db.transaction.create({
+      data: {
+        workspaceId: ws.id,
+        projectId: t.site ? siteToProjectId(t.site) ?? null : null,
+        type: t.type,
+        amount: t.amount,
+        description: t.description,
+        date: t.date,
       },
     });
   }
@@ -215,9 +466,15 @@ async function main() {
   const counts = {
     users: await db.user.count(),
     projects: await db.project.count(),
-    budgetLines: await db.budgetLine.count(),
-    milestones: await db.milestone.count(),
-    openClockIns: await db.timeEntry.count({ where: { clockOut: null } }),
+    timeEntries: await db.timeEntry.count(),
+    fieldReports: await db.fieldReport.count(),
+    approvals: await db.approval.count(),
+    scopeSteps: await db.scopeStep.count(),
+    photos: await db.photo.count(),
+    sheets: await db.sheet.count(),
+    measurements: await db.measurement.count(),
+    scopeItems: await db.scopeItem.count(),
+    transactions: await db.transaction.count(),
   };
   console.log("Seed complete:", counts);
 }

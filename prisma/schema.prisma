@@ -48,6 +48,7 @@ model Workspace {
   scopeItems  ScopeItem[]
   assets      Asset[]
   customRoles CustomRole[]
+  transactions Transaction[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
@@ -180,6 +181,11 @@ model Project {
   guardrails   Guardrail[]
   changeOrders ChangeOrder[]
   invoices     Invoice[]
+  fieldReports FieldReport[]
+  approvals    Approval[]
+  photos       Photo[]
+  sheets       Sheet[]
+  transactions Transaction[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -226,7 +232,34 @@ model Measurement {
   pointsJson  Json? // polygon vertices, normalized 0–100
   confidence  Confidence?
   reference   String? // INSIDE | CENTER | OUTSIDE (EIFS measurement ref)
+  source      MeasurementSource @default(MANUAL)
+  sheet       Sheet?      @relation(fields: [sheetId], references: [id], onDelete: SetNull)
+  sheetId     String?
   createdAt   DateTime    @default(now())
+
+  @@index([projectId])
+  @@index([sheetId])
+}
+
+enum MeasurementSource {
+  MANUAL
+  AI
+}
+
+// A plan sheet inside a takeoff: carries the scale gate (estimator must
+// confirm the AI-detected scale before measurements are trusted).
+model Sheet {
+  id              String       @id @default(cuid())
+  project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId       String
+  name            String
+  scale           Float // feet per viewBox unit
+  scaleConfidence Confidence   @default(MED)
+  scaleVerifiedAt DateTime?
+  imageUrl        String?
+  sort            Int          @default(0)
+  measurements    Measurement[]
+  createdAt       DateTime     @default(now())
 
   @@index([projectId])
 }
@@ -263,14 +296,33 @@ model Assignment {
   date        DateTime
   note        String?
   scope       String?
-  sqft        Int?
+  sqft        Int? // goal sqft for the day
+  doneSqft    Int? // progress against the goal
   suggestedHr Float?
   plannedHr   Float?
   status      AssignmentStatus @default(PENDING)
   crewUserIds String[]
   declineNote String?
+  scopedById  String? // foreman who set the scope
+  scopedAt    DateTime?
+  onSiteNote  String? // staging / scaffold note for the crew
+  steps       ScopeStep[]
 
   @@index([projectId])
+}
+
+// Ordered checklist steps within a day's assignment (worker scope screen).
+model ScopeStep {
+  id           String     @id @default(cuid())
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  assignmentId String
+  label        String
+  sort         Int        @default(0)
+  done         Boolean    @default(false)
+  current      Boolean    @default(false)
+  completedAt  DateTime?
+
+  @@index([assignmentId])
 }
 
 enum TimeSource {
@@ -304,6 +356,7 @@ model TimeEntry {
   date      DateTime
   clockIn   String?
   clockOut  String?
+  pausedAt  String? // set while on break; cleared on resume
   hours     Float          @default(0)
   source    TimeSource     @default(AUTO)
   anomalies Anomaly[] // multiple flags per entry (V1 collapsed to one)
@@ -492,4 +545,107 @@ model Notification {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Field intake — blockers / photos / notes the foreman triages
+// ─────────────────────────────────────────────────────────────
+
+enum FieldKind {
+  BLOCKER
+  PHOTO
+  NOTE
+}
+
+model FieldReport {
+  id        String    @id @default(cuid())
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  userId    String // who reported it
+  kind      FieldKind
+  detail    String
+  resolved  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  @@index([projectId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Approvals queue — owner approves field requests (materials/OT/equipment)
+// ─────────────────────────────────────────────────────────────
+
+enum ApprovalKind {
+  MATERIALS
+  TIME_OT
+  EQUIPMENT
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
+model Approval {
+  id              String        @id @default(cuid())
+  project         Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId       String
+  requesterUserId String
+  kind            ApprovalKind
+  detail          String
+  amount          Decimal       @db.Decimal(12, 2)
+  unit            String        @default("USD") // USD | hrs
+  urgent          Boolean       @default(false)
+  status          RequestStatus @default(PENDING)
+  decidedAt       DateTime?
+  decidedById     String?
+  createdAt       DateTime      @default(now())
+
+  @@index([projectId])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Photos — scope-tagged field photos (worker log)
+// ─────────────────────────────────────────────────────────────
+
+model Photo {
+  id        String   @id @default(cuid())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  userId    String
+  tag       String // scope code: EPS | BASE | STONE ...
+  url       String?
+  takenAt   DateTime @default(now())
+
+  @@index([projectId])
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Cash ledger — drives the owner money tiles (in/out/payroll/unbilled)
+// ─────────────────────────────────────────────────────────────
+
+enum TxnType {
+  PAYMENT_IN // cash received from a client
+  MATERIAL_COST // supplier invoice paid
+  PAYROLL // wages paid
+  EQUIPMENT // rental / equipment charge
+  INVOICE_SENT // billed, not necessarily collected
+}
+
+model Transaction {
+  id          String    @id @default(cuid())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId   String?
+  type        TxnType
+  amount      Decimal   @db.Decimal(12, 2)
+  description String
+  date        DateTime
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId])
+  @@index([projectId])
 }
