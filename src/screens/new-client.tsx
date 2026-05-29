@@ -1,4 +1,4 @@
-import { Pad, Stack, Eyebrow, H1, Field, Button } from "@/components/ui";
+import { Pad, Stack, Eyebrow, H1, Field, Button, FormSelect } from "@/components/ui";
 import { createClient } from "@/server/actions";
 
 /** Add a client to the book of business. */
@@ -13,15 +13,12 @@ export function NewClient() {
 
           <Field label="Name" name="name" placeholder="Cardinal Group" required />
 
-          <label style={{ display: "block" }}>
-            <div className="v2-eyebrow" style={{ marginBottom: 6 }}>Type</div>
-            <select className="v2-field" name="kind" defaultValue="BUILDER">
-              <option value="BUILDER">Builder</option>
-              <option value="GC">General contractor</option>
-              <option value="OWNER">Owner</option>
-              <option value="ARCHITECT">Architect</option>
-            </select>
-          </label>
+          <FormSelect label="Type" name="kind" defaultValue="BUILDER">
+            <option value="BUILDER">Builder</option>
+            <option value="GC">General contractor</option>
+            <option value="OWNER">Owner</option>
+            <option value="ARCHITECT">Architect</option>
+          </FormSelect>
 
           <Field label="Email (optional)" name="email" type="email" placeholder="ops@cardinalgroup.ca" />
           <Field label="Phone (optional)" name="phone" inputMode="tel" placeholder="+1 403 555 0144" />

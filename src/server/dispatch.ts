@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { getActiveWorkspaceId } from "./workspace";
+import { getActiveProjectOptions } from "./projects";
 
 export type DispatchStatusView = "OUT" | "OVERDUE" | "RETURNED";
 
@@ -84,11 +85,7 @@ export async function getDispatchResources(): Promise<{
       select: { id: true, name: true, ownedQty: true, dispatches: { select: { qty: true, status: true } } },
       orderBy: { name: "asc" },
     }),
-    db.project.findMany({
-      where: { workspaceId, status: { in: ["ACCEPTED", "IN_PROGRESS"] } },
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
-    }),
+    getActiveProjectOptions(),
   ]);
   return {
     assets: assets.map((a) => {

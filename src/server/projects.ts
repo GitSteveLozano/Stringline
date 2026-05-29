@@ -185,3 +185,13 @@ export async function getProjectDetail(id: string): Promise<ProjectDetail | null
 
   return { project: toViewModel(row), budget, changeOrders, milestones, lostReason: row.lostReason, lostNote: row.lostNote, invoice, guardrails };
 }
+
+/** Projects you can assign crew / dispatch gear / file reports against. */
+export async function getActiveProjectOptions(): Promise<{ id: string; name: string }[]> {
+  const workspaceId = await getActiveWorkspaceId();
+  return db.project.findMany({
+    where: { workspaceId, status: { in: ["ACCEPTED", "IN_PROGRESS"] } },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+}

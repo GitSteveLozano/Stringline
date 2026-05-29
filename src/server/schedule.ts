@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { getActiveWorkspaceId } from "./workspace";
+import { getActiveProjectOptions } from "./projects";
 import type { AssignmentStatus } from "@prisma/client";
 
 export type ScheduleEntry = {
@@ -89,11 +90,7 @@ export async function getAssignableResources(): Promise<{
 }> {
   const workspaceId = await getActiveWorkspaceId();
   const [projects, memberships] = await Promise.all([
-    db.project.findMany({
-      where: { workspaceId, status: { in: ["ACCEPTED", "IN_PROGRESS"] } },
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
-    }),
+    getActiveProjectOptions(),
     db.membership.findMany({
       where: { workspaceId, role: { in: ["FOREMAN", "WORKER"] } },
       select: { userId: true, user: { select: { name: true } } },
