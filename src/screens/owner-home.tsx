@@ -50,6 +50,11 @@ export async function OwnerHome() {
             {s.runningCount} jobs running · {s.crewOnClock} crew on the clock ·{" "}
             {caughtUp ? "nothing needs you." : "tap a flagged job to handle it."}
           </div>
+          <Link href="/activity" style={{ textDecoration: "none" }}>
+            <span className="v2-mono" style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              View activity →
+            </span>
+          </Link>
         </Stack>
       </Pad>
 
