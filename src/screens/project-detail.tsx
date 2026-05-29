@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pad, Stack, Eyebrow, H1, H3, Field, Spread, Pill, SectionBar, Mono, Button, Rule } from "@/components/ui";
+import { Pad, Stack, Eyebrow, H1, H3, Field, Spread, Pill, SectionBar, Mono, Button, Rule, Meter } from "@/components/ui";
 import { LIFECYCLE, money0, statusLabel, healthLabel } from "@/lib/demo-data";
 import { getProjectDetail } from "@/server/projects";
 import { advanceProjectStatus, markProjectLost, addChangeOrder, decideChangeOrder, generateInvoice, markInvoicePaid, snoozeGuardrail, rearmGuardrail } from "@/server/actions";
@@ -118,29 +118,17 @@ export async function ProjectDetail({ id }: { id: string }) {
             <Eyebrow>Budget vs spent</Eyebrow>
           </SectionBar>
           <div>
-            {budget.map((b) => {
-              const pct = Math.min(1, b.spent / b.bid);
-              const over = b.spent > b.bid;
-              return (
-                <div key={b.label} className="v2-pad" style={{ paddingTop: 12, paddingBottom: 12 }}>
-                  <Spread>
-                    <span className="v2-body" style={{ fontSize: 14 }}>{b.label}</span>
-                    <Mono>
-                      {money0(b.spent)} / {money0(b.bid)}
-                    </Mono>
-                  </Spread>
-                  <div style={{ height: 8, background: "var(--v2-sand-2)", border: "1px solid var(--v2-ink)", marginTop: 6 }}>
-                    <div
-                      style={{
-                        width: `${pct * 100}%`,
-                        height: "100%",
-                        background: over ? "var(--v2-bad)" : "var(--v2-accent)",
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+            {budget.map((b) => (
+              <div key={b.label} className="v2-pad" style={{ paddingTop: 12, paddingBottom: 12 }}>
+                <Spread>
+                  <span className="v2-body" style={{ fontSize: 14 }}>{b.label}</span>
+                  <Mono>
+                    {money0(b.spent)} / {money0(b.bid)}
+                  </Mono>
+                </Spread>
+                <Meter value={b.bid > 0 ? b.spent / b.bid : 0} danger={b.spent > b.bid} />
+              </div>
+            ))}
           </div>
         </>
       )}

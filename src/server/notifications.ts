@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { getCurrentUser } from "./auth";
+import { relativeAge } from "./format";
 
 export type NotificationItem = {
   id: string;
@@ -10,15 +11,6 @@ export type NotificationItem = {
   read: boolean;
   ago: string;
 };
-
-/** Compact relative age, e.g. "3m", "2h", "4d". */
-function ago(d: Date): string {
-  const mins = Math.max(1, Math.round((Date.now() - d.getTime()) / 60000));
-  if (mins < 60) return `${mins}m`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h`;
-  return `${Math.round(hrs / 24)}d`;
-}
 
 /** The signed-in user's notifications, newest first. */
 export async function getNotifications(): Promise<NotificationItem[]> {
@@ -36,7 +28,7 @@ export async function getNotifications(): Promise<NotificationItem[]> {
     body: n.body,
     projectId: n.projectId,
     read: n.read,
-    ago: ago(n.createdAt),
+    ago: relativeAge(n.createdAt),
   }));
 }
 
