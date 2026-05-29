@@ -573,6 +573,10 @@ export async function createAssignment(formData: FormData) {
   const dateStr = String(formData.get("date") ?? "").trim();
   if (!projectId || !dateStr) return;
 
+  // Reject an invalid date (a direct POST can bypass the <input type=date>).
+  const date = new Date(`${dateStr}T07:30:00`);
+  if (Number.isNaN(date.getTime())) return;
+
   // Guard the project belongs to this workspace.
   const owned = await db.project.findFirst({ where: { id: projectId, workspaceId }, select: { id: true } });
   if (!owned) return;
@@ -580,12 +584,23 @@ export async function createAssignment(formData: FormData) {
   const scope = String(formData.get("scope") ?? "").trim() || null;
   const sqftRaw = parseInt(String(formData.get("sqft") ?? ""), 10);
   const hrRaw = parseFloat(String(formData.get("plannedHr") ?? ""));
-  const crewUserIds = formData.getAll("crew").map(String).filter(Boolean);
+  // Keep only crew that actually belong to this workspace — never trust the
+  // posted ids (a crafted request could reference another tenant's users).
+  const requested = formData.getAll("crew").map(String).filter(Boolean);
+  const crewUserIds = requested.length
+    ? [
+        ...new Set(
+          (await db.membership.findMany({ where: { workspaceId, userId: { in: requested } }, select: { userId: true } })).map(
+            (m) => m.userId,
+          ),
+        ),
+      ]
+    : [];
 
   await db.assignment.create({
     data: {
       projectId,
-      date: new Date(`${dateStr}T07:30:00`),
+      date,
       scope,
       sqft: Number.isFinite(sqftRaw) ? sqftRaw : null,
       plannedHr: Number.isFinite(hrRaw) ? hrRaw : null,
@@ -606,16 +621,22 @@ export async function createDispatch(formData: FormData) {
   const dueStr = String(formData.get("dueBack") ?? "").trim();
   if (!assetId || !projectId || !Number.isFinite(qty) || qty <= 0) return;
 
-  const [asset, project] = await Promise.all([
-    db.asset.findFirst({ where: { id: assetId, workspaceId }, select: { id: true } }),
+  const [asset, project, dispatched] = await Promise.all([
+    db.asset.findFirst({ where: { id: assetId, workspaceId }, select: { ownedQty: true } }),
     db.project.findFirst({ where: { id: projectId, workspaceId }, select: { id: true } }),
+    db.dispatch.aggregate({ where: { assetId, status: { not: "RETURNED" } }, _sum: { qty: true } }),
   ]);
   if (!asset || !project) return;
 
-  const count = await db.dispatch.count({ where: { asset: { workspaceId } } });
+  // Don't over-commit the yard: cap the dispatch at what's actually available.
+  const available = asset.ownedQty - (dispatched._sum.qty ?? 0);
+  if (qty > available) return;
+
+  // Time-based ticket id avoids the count()-then-create race producing dups.
+  const ticketId = `D-${Date.now().toString(36).toUpperCase().slice(-5)}`;
   await db.dispatch.create({
     data: {
-      ticketId: `D-${1000 + count + 1}`,
+      ticketId,
       assetId,
       qty,
       projectId,
@@ -651,6 +672,9 @@ export async function createClient(formData: FormData) {
 
 /** Invite a teammate: create the user + a pending membership (Team confirms it). */
 export async function createMember(formData: FormData) {
+  // Inviting a teammate (incl. an owner) is an owner-only action.
+  const me = await getCurrentUser();
+  if (!me || !me.roles.includes("owner")) return;
   const workspaceId = await getActiveWorkspaceId();
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return;
@@ -665,16 +689,22 @@ export async function createMember(formData: FormData) {
   if (email && (await db.user.findUnique({ where: { email }, select: { id: true } }))) return;
   if (phone && (await db.user.findUnique({ where: { phone }, select: { id: true } }))) return;
 
-  await db.user.create({
-    data: {
-      name,
-      email,
-      phone,
-      memberships: {
-        create: { workspaceId, role, baseHourly: Number.isFinite(rateRaw) ? rateRaw : null, pending: true },
+  try {
+    await db.user.create({
+      data: {
+        name,
+        email,
+        phone,
+        memberships: {
+          create: { workspaceId, role, baseHourly: Number.isFinite(rateRaw) ? rateRaw : null, pending: true },
+        },
       },
-    },
-  });
+    });
+  } catch (e) {
+    // P2002 = unique email/phone lost a race with the pre-check; treat as no-op.
+    if ((e as { code?: string }).code === "P2002") return;
+    throw e;
+  }
   revalidatePath("/owner/team");
   redirect("/owner/team");
 }
