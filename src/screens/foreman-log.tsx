@@ -1,11 +1,23 @@
-import { Pad, Stack, Eyebrow, H1, Card, SectionBar, Mono, Button, Spread } from "@/components/ui";
-import { todayLog } from "@/lib/demo-data";
+import { Pad, Stack, Eyebrow, H1, Card, SectionBar, Mono, Button, Spread, Pill } from "@/components/ui";
+import { getForemanLog } from "@/server/foreman";
+import { submitDailyLog } from "@/server/actions";
 
-export function ForemanLog() {
-  const pct = Math.round((todayLog.sqftDone / todayLog.sqftPlanned) * 100);
+export async function ForemanLog() {
+  const log = await getForemanLog();
+  if (!log) {
+    return (
+      <Pad>
+        <Stack gap="tight">
+          <Eyebrow>Daily log · today</Eyebrow>
+          <H1>No log started yet.</H1>
+        </Stack>
+      </Pad>
+    );
+  }
+  const pct = log.sqftPlanned ? Math.round((log.sqftDone / log.sqftPlanned) * 100) : 0;
   const stats = [
-    { label: "Photos", value: String(todayLog.photos) },
-    { label: "Crew hrs", value: String(todayLog.crewHours) },
+    { label: "Photos", value: String(log.photos) },
+    { label: "Crew hrs", value: String(log.crewHours) },
     { label: "Progress", value: `${pct}%` },
   ];
 
@@ -14,8 +26,8 @@ export function ForemanLog() {
       <Pad>
         <Stack gap="tight">
           <Eyebrow>Daily log · today</Eyebrow>
-          <H1>{todayLog.site}</H1>
-          <div className="v2-quiet v2-body">{todayLog.weather}</div>
+          <H1>{log.site}</H1>
+          <div className="v2-quiet v2-body">{log.weather}</div>
         </Stack>
       </Pad>
 
@@ -32,11 +44,11 @@ export function ForemanLog() {
 
       <SectionBar>
         <Eyebrow accent>Agent draft</Eyebrow>
-        <Mono>from 12 photos · clock data</Mono>
+        <Mono>from {log.photos} photos · clock data</Mono>
       </SectionBar>
       <Pad>
         <Card>
-          <div className="v2-body" style={{ lineHeight: 1.5 }}>{todayLog.narrative}</div>
+          <div className="v2-body" style={{ lineHeight: 1.5 }}>{log.narrative}</div>
         </Card>
       </Pad>
 
@@ -44,9 +56,18 @@ export function ForemanLog() {
         <Stack>
           <Spread>
             <Mono>Reviewed and edited?</Mono>
+            {log.submitted && <Pill tone="good">Submitted</Pill>}
           </Spread>
-          <Button variant="primary">Submit to owner</Button>
-          <Button variant="ghost">Send to client too</Button>
+          {log.submitted ? (
+            <Button variant="ghost" disabled>Submitted to owner</Button>
+          ) : (
+            <>
+              <form action={submitDailyLog.bind(null, log.id)}>
+                <Button variant="primary" type="submit" style={{ width: "100%" }}>Submit to owner</Button>
+              </form>
+              <Button variant="ghost">Send to client too</Button>
+            </>
+          )}
         </Stack>
       </Pad>
     </>

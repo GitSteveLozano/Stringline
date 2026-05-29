@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Pad, Stack, Eyebrow, H1, Field, Button, Card, Mono, Spread, Fill } from "@/components/ui";
 import { Icon } from "@/components/icon";
+import { devSignIn } from "@/server/auth-actions";
 
 const TRADES = ["Stucco / EIFS", "Framing", "Drywall", "Painting", "Roofing", "General"];
 const CREW_SIZES = ["Just me · solo", "2–5", "6–15", "15+"];
@@ -14,14 +14,15 @@ const INTEGRATIONS = [
 ];
 
 export function Onboarding() {
-  const router = useRouter();
   const [step, setStep] = useState(0);
   const [trade, setTrade] = useState(TRADES[0]);
   const [crew, setCrew] = useState(CREW_SIZES[0]);
   const [connected, setConnected] = useState<Record<string, boolean>>({});
   const last = 3;
 
-  const next = () => (step < last ? setStep(step + 1) : router.push("/owner"));
+  // Demo: there's no workspace-provisioning yet, so finishing signs you in
+  // as the seeded owner to land in the app.
+  const next = () => (step < last ? setStep(step + 1) : devSignIn("owner"));
 
   return (
     <Pad>

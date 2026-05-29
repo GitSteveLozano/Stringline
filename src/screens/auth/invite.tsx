@@ -54,7 +54,7 @@ export function Invite({ role }: { role: Exclude<Role, "owner"> }) {
 
         <Fill />
         <Stack>
-          <Link href={`/${role}`} className="v2-btn primary">
+          <Link href={role === "worker" ? "/signin/phone" : "/signin"} className="v2-btn primary">
             {c.cta}
           </Link>
           <div className="v2-quiet v2-body" style={{ fontSize: 12, textAlign: "center" }}>

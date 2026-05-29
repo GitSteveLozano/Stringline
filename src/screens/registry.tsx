@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import type { Role } from "@/lib/personas";
 import { TABS } from "@/lib/personas";
 import { Placeholder } from "@/components/placeholder";
@@ -18,7 +18,9 @@ import { WorkerScope } from "./worker-scope";
 import { WorkerHours } from "./worker-hours";
 import { WorkerLog } from "./worker-log";
 
-type Entry = { title: string; Comp: ComponentType };
+// Screens are server components; some are async (DB-backed), some sync.
+type ScreenComponent = ComponentType | (() => Promise<ReactNode>);
+type Entry = { title: string; Comp: ScreenComponent };
 
 /** Keyed by `role` (home tab) or `role/tab`. Missing keys fall back to Placeholder. */
 const REGISTRY: Record<string, Entry> = {

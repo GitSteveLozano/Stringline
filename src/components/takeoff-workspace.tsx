@@ -3,7 +3,6 @@
 import { useState, useRef } from "react";
 import { Pad, Stack, Eyebrow, H2, SectionBar, Mono, Pill, Button, Card, Spread } from "@/components/ui";
 import {
-  sheetsFor,
   SCOPES,
   scopeColor,
   areaSf,
@@ -14,6 +13,8 @@ import {
   type Measurement,
   type Confidence,
 } from "@/lib/takeoff";
+import { verifySheetScale, saveMeasurement } from "@/server/actions";
+import type { TakeoffSheet, TakeoffMeasurement } from "@/server/estimator";
 
 function confTone(c?: Confidence): "good" | "bad" | undefined {
   if (c === "HIGH") return "good";
@@ -21,22 +22,43 @@ function confTone(c?: Confidence): "good" | "bad" | undefined {
   return undefined;
 }
 
-export function TakeoffWorkspace({ projectId }: { projectId: string }) {
-  const sheets = sheetsFor(projectId);
-  const scale = sheets[0].scale;
+export function TakeoffWorkspace({
+  projectId,
+  sheets,
+  initialMeasurements,
+}: {
+  projectId: string;
+  sheets: TakeoffSheet[];
+  initialMeasurements: TakeoffMeasurement[];
+}) {
+  const scale = sheets[0]?.scale ?? 0.18;
 
   const [verified, setVerified] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(sheets.map((s) => [s.id, s.confidence === "HIGH"]))
+    Object.fromEntries(sheets.map((s) => [s.id, s.verified]))
   );
   const [view, setView] = useState<"sheets" | "canvas">("sheets");
   const allVerified = sheets.every((s) => verified[s.id]);
 
-  // Canvas state
-  const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  // Canvas state — seeded from the persisted takeoff.
+  const [measurements, setMeasurements] = useState<Measurement[]>(() =>
+    initialMeasurements.map((m) => ({
+      id: m.id,
+      scope: m.scope,
+      points: m.points,
+      sf: m.sf,
+      source: m.source,
+      confidence: m.confidence,
+    }))
+  );
   const [current, setCurrent] = useState<Pt[]>([]);
   const [activeScope, setActiveScope] = useState(SCOPES[0].code);
   const [aiRan, setAiRan] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
+
+  function confirmScale(sheetId: string) {
+    setVerified((v) => ({ ...v, [sheetId]: true }));
+    void verifySheetScale(sheetId);
+  }
 
   function toPoint(e: React.MouseEvent): Pt {
     const svg = svgRef.current!;
@@ -49,17 +71,16 @@ export function TakeoffWorkspace({ projectId }: { projectId: string }) {
 
   function finish() {
     if (current.length < 3) return;
+    const sf = areaSf(current, scale);
+    const points = current;
     setMeasurements((m) => [
       ...m,
-      {
-        id: `m-${Date.now()}`,
-        scope: activeScope,
-        points: current,
-        sf: areaSf(current, scale),
-        source: "manual",
-      },
+      { id: `m-${Date.now()}`, scope: activeScope, points, sf, source: "manual" },
     ]);
     setCurrent([]);
+    if (sheets[0]) {
+      void saveMeasurement({ projectId, sheetId: sheets[0].id, scope: activeScope, points, sf });
+    }
   }
 
   function runAi() {
@@ -97,7 +118,7 @@ export function TakeoffWorkspace({ projectId }: { projectId: string }) {
               <Card key={s.id}>
                 <Spread>
                   <Eyebrow accent>AI autoscale</Eyebrow>
-                  <Pill tone={ok ? "good" : confTone(s.confidence)}>
+                  <Pill tone={ok ? "good" : confTone(s.confidence as Confidence)}>
                     {ok ? "Verified" : s.confidence}
                   </Pill>
                 </Spread>
@@ -105,7 +126,7 @@ export function TakeoffWorkspace({ projectId }: { projectId: string }) {
                 <Mono>detected {s.scale}&apos; / unit</Mono>
                 {!ok && (
                   <div style={{ marginTop: 12 }}>
-                    <Button variant="primary" onClick={() => setVerified((v) => ({ ...v, [s.id]: true }))}>
+                    <Button variant="primary" onClick={() => confirmScale(s.id)}>
                       Confirm scale
                     </Button>
                   </div>

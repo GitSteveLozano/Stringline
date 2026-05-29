@@ -1,17 +1,11 @@
 import { Pad, Stack, Eyebrow, H1, H3, Spread, Pill, SectionBar, Mono, Button, Rule } from "@/components/ui";
-import {
-  projectById,
-  projectExtras,
-  LIFECYCLE,
-  money0,
-  statusLabel,
-  healthLabel,
-} from "@/lib/demo-data";
+import { LIFECYCLE, money0, statusLabel, healthLabel } from "@/lib/demo-data";
+import { getProjectDetail } from "@/server/projects";
 
 /** Lifecycle state machine — same screen across Drafting → Paid; content shifts with status. */
-export function ProjectDetail({ id }: { id: string }) {
-  const p = projectById(id);
-  if (!p) {
+export async function ProjectDetail({ id }: { id: string }) {
+  const detail = await getProjectDetail(id);
+  if (!detail) {
     return (
       <Pad>
         <Stack>
@@ -22,8 +16,8 @@ export function ProjectDetail({ id }: { id: string }) {
     );
   }
 
-  const extras = projectExtras[p.id];
-  const acceptedCOs = extras?.changeOrders.filter((c) => c.status === "ACCEPTED") ?? [];
+  const { project: p, budget, changeOrders, milestones } = detail;
+  const acceptedCOs = changeOrders.filter((c) => c.status === "ACCEPTED");
   const coTotal = acceptedCOs.reduce((s, c) => s + c.delta, 0);
   const contract = p.contractValue + coTotal;
   const activeIdx = LIFECYCLE.indexOf(p.status);
@@ -95,13 +89,13 @@ export function ProjectDetail({ id }: { id: string }) {
       </Pad>
 
       {/* Budget (when there's spend) */}
-      {extras && (p.status === "IN_PROGRESS" || p.status === "DONE") && (
+      {budget.length > 0 && (p.status === "IN_PROGRESS" || p.status === "DONE") && (
         <>
           <SectionBar>
             <Eyebrow>Budget vs spent</Eyebrow>
           </SectionBar>
           <div>
-            {extras.budget.map((b) => {
+            {budget.map((b) => {
               const pct = Math.min(1, b.spent / b.bid);
               const over = b.spent > b.bid;
               return (
@@ -129,14 +123,14 @@ export function ProjectDetail({ id }: { id: string }) {
       )}
 
       {/* Change orders */}
-      {extras && extras.changeOrders.length > 0 && (
+      {changeOrders.length > 0 && (
         <>
           <SectionBar>
             <Eyebrow>Change orders</Eyebrow>
-            <Mono>{extras.changeOrders.length}</Mono>
+            <Mono>{changeOrders.length}</Mono>
           </SectionBar>
           <div>
-            {extras.changeOrders.map((c) => (
+            {changeOrders.map((c) => (
               <div key={c.number} className="v2-row">
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <H3>CO #{c.number}</H3>
@@ -155,13 +149,13 @@ export function ProjectDetail({ id }: { id: string }) {
       )}
 
       {/* Milestones */}
-      {extras && (
+      {milestones.length > 0 && (
         <>
           <SectionBar>
             <Eyebrow>Billing milestones</Eyebrow>
           </SectionBar>
           <div>
-            {extras.milestones.map((m) => (
+            {milestones.map((m) => (
               <div key={m.label} className="v2-row">
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <span className="v2-body">{m.label}</span>{" "}

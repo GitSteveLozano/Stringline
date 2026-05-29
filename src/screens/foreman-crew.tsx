@@ -1,14 +1,13 @@
 import { SectionBar, Eyebrow, Mono, Row, Pill } from "@/components/ui";
-import { crew, projects } from "@/lib/demo-data";
+import { getForemanCrew } from "@/server/foreman";
 
 // Crew roster grouped by site. Foreman view — status, not dollars.
-export function ForemanCrew() {
-  const sites = projects.filter((p) => p.status === "IN_PROGRESS");
+export async function ForemanCrew() {
+  const sites = await getForemanCrew();
 
   return (
     <>
-      {sites.map((site) => {
-        const members = crew.filter((c) => c.project === site.id);
+      {sites.map(({ site, members }) => {
         if (members.length === 0) return null;
         const here = members.filter((m) => m.clockedIn).length;
         return (

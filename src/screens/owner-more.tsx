@@ -1,6 +1,6 @@
 import { SectionBar, Eyebrow, Row } from "@/components/ui";
 import { Icon, type IconName } from "@/components/icon";
-import { workspace } from "@/lib/demo-data";
+import { getWorkspaceInfo } from "@/server/workspace";
 
 const GROUPS: { heading: string; items: { label: string; icon: IconName }[] }[] = [
   {
@@ -29,7 +29,8 @@ const GROUPS: { heading: string; items: { label: string; icon: IconName }[] }[] 
   },
 ];
 
-export function OwnerMore() {
+export async function OwnerMore() {
+  const workspace = await getWorkspaceInfo();
   return (
     <>
       <div className="v2-pad">

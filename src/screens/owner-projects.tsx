@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SectionBar, Mono, Eyebrow, Row, Pill } from "@/components/ui";
-import { projects, healthLabel, type Project, type ProjectHealth } from "@/lib/demo-data";
+import { healthLabel, type Project, type ProjectHealth } from "@/lib/demo-data";
+import { listProjects } from "@/server/projects";
 
 function tone(h: ProjectHealth): "good" | "bad" | undefined {
   if (h === "ON_TRACK") return "good";
@@ -16,7 +17,8 @@ const BUCKETS: { label: string; match: (p: Project) => boolean }[] = [
   { label: "Closeout", match: (p) => p.status === "DONE" || p.status === "PAID" },
 ];
 
-export function OwnerProjects() {
+export async function OwnerProjects() {
+  const projects = await listProjects();
   return (
     <>
       {BUCKETS.map((b) => {

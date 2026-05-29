@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Inter_Tight, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { ServiceWorkerRegister } from "@/components/sw-register";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -45,7 +46,10 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${interTight.variable} ${jetbrainsMono.variable} h-full`}
     >
-      <body className="h-full">{children}</body>
+      <body className="h-full">
+        <ServiceWorkerRegister />
+        {children}
+      </body>
     </html>
   );
 }

@@ -1,13 +1,17 @@
-import { Pad, Stack, Card, Spread, Eyebrow, Mono, Pill, Button } from "@/components/ui";
-import { approvals } from "@/lib/demo-data";
+import { Pad, Stack, Card, Spread, Eyebrow, Mono, Pill, Button, H2 } from "@/components/ui";
+import { getPendingApprovals } from "@/server/approvals";
+import { decideApproval } from "@/server/actions";
 
-export function OwnerApprovals() {
+export async function OwnerApprovals() {
+  const approvals = await getPendingApprovals();
+
   return (
     <Pad>
       <Stack>
         <div className="v2-quiet v2-body">
           Auto-escalates to your phone after 30 min unattended.
         </div>
+        {approvals.length === 0 && <H2>You&apos;re all caught up.</H2>}
         {approvals.map((a) => (
           <Card key={a.id} style={a.urgent ? { borderLeftWidth: 6 } : undefined}>
             <Spread>
@@ -26,8 +30,12 @@ export function OwnerApprovals() {
               </Pill>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 14 }}>
-              <Button variant="primary">Approve</Button>
-              <Button variant="ghost">Deny</Button>
+              <form action={decideApproval.bind(null, a.id, "APPROVED")}>
+                <Button variant="primary" type="submit" style={{ width: "100%" }}>Approve</Button>
+              </form>
+              <form action={decideApproval.bind(null, a.id, "DENIED")}>
+                <Button variant="ghost" type="submit" style={{ width: "100%" }}>Deny</Button>
+              </form>
             </div>
           </Card>
         ))}

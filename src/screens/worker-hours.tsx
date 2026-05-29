@@ -1,7 +1,9 @@
 import { Pad, Stack, Eyebrow, BigNum, SectionBar, Mono, Row, Pill } from "@/components/ui";
-import { workerWeek, money0 } from "@/lib/demo-data";
+import { money0 } from "@/lib/demo-data";
+import { getWorkerHours } from "@/server/worker";
 
-export function WorkerHours() {
+export async function WorkerHours() {
+  const workerWeek = await getWorkerHours();
   const maxH = Math.max(...workerWeek.days.map((d) => d.h || d.plan || 1));
 
   return (
@@ -39,14 +41,14 @@ export function WorkerHours() {
         <Eyebrow>Entries</Eyebrow>
       </SectionBar>
       <div>
-        {workerWeek.entries.map((e) => (
-          <Row key={e.date}>
+        {workerWeek.entries.map((e, i) => (
+          <Row key={i}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="v2-h3">{e.date}</div>
               <div className="v2-quiet" style={{ fontSize: 13, marginTop: 2 }}>{e.site}</div>
             </div>
             <Mono>{e.hours}h</Mono>
-            <Pill tone="good">{e.status}</Pill>
+            <Pill tone={e.status === "Approved" || e.status === "Paid" ? "good" : undefined}>{e.status}</Pill>
           </Row>
         ))}
       </div>
