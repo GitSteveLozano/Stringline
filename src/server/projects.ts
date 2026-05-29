@@ -110,6 +110,8 @@ export type ProjectDetail = {
   budget: BudgetLine[];
   changeOrders: ChangeOrderRow[];
   milestones: MilestoneRow[];
+  lostReason: string | null;
+  lostNote: string | null;
 };
 
 export async function getProjectDetail(id: string): Promise<ProjectDetail | null> {
@@ -117,6 +119,8 @@ export async function getProjectDetail(id: string): Promise<ProjectDetail | null
     where: { id },
     select: {
       ...projectSelect,
+      lostReason: true,
+      lostNote: true,
       budgetLines: { orderBy: { sort: "asc" } },
       changeOrders: { orderBy: { number: "asc" } },
       invoices: { include: { milestones: { orderBy: { percent: "desc" } } } },
@@ -144,5 +148,5 @@ export async function getProjectDetail(id: string): Promise<ProjectDetail | null
       paid: m.paidOn != null,
     }));
 
-  return { project: toViewModel(row), budget, changeOrders, milestones };
+  return { project: toViewModel(row), budget, changeOrders, milestones, lostReason: row.lostReason, lostNote: row.lostNote };
 }
