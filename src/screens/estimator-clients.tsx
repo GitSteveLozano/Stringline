@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill } from "@/components/ui";
+import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill, DataTable } from "@/components/ui";
 import { money0 } from "@/lib/demo-data";
 import { initials } from "@/server/format";
 import { getEstimatorClients, clientKindLabel } from "@/server/estimator";
@@ -25,7 +25,27 @@ export async function EstimatorClients() {
         <Mono>{clients.length}</Mono>
       </SectionBar>
 
-      <div>
+      <DataTable
+        columns={[
+          { label: "Client" },
+          { label: "Type", width: "150px" },
+          { label: "Projects", num: true, width: "120px" },
+          { label: "Value", num: true, width: "140px" },
+          { label: "", width: "90px" },
+        ]}
+        rows={clients.map((c) => ({
+          id: c.id,
+          href: `/client/${c.id}`,
+          cells: [
+            <span key="n" className="v2-gtd-strong">{c.name}</span>,
+            clientKindLabel(c.kind),
+            String(c.projectCount),
+            c.activeValue > 0 ? money0(c.activeValue) : "—",
+            c.isLead ? <Pill key="l" tone="live" dot>Lead</Pill> : "",
+          ],
+        }))}
+      />
+      <div className="v2-only-mobile">
         {clients.map((c) => (
           <Link key={c.id} href={`/client/${c.id}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
             <Row lead={<span className="v2-mono" style={{ fontWeight: 700 }}>{initials(c.name)}</span>}>
