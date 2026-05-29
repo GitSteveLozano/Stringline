@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill } from "@/components/ui";
 import { money0 } from "@/lib/demo-data";
 import { getReceivables, getCashSummary } from "@/server/money";
@@ -19,6 +20,11 @@ export async function OwnerMoney() {
           <Eyebrow>Net 30 days</Eyebrow>
           <H1>{money0(net)}</H1>
           <div className="v2-quiet v2-body">In minus out, across all jobs.</div>
+          <Link href="/reports" style={{ textDecoration: "none" }}>
+            <span className="v2-mono" style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              View insights →
+            </span>
+          </Link>
         </Stack>
       </Pad>
 
