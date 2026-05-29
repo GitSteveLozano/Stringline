@@ -20,9 +20,15 @@ export async function getTeam(): Promise<TeamMember[]> {
   });
 
   // One row per person: a solo operator who "wears" several hats has multiple
-  // memberships, but the roster should list them once (by their earliest role).
-  const seen = new Set<string>();
-  const unique = rows.filter((m) => (seen.has(m.userId) ? false : (seen.add(m.userId), true)));
+  // memberships, but the roster should list them once. Prefer a pending
+  // membership when one exists so its "Confirm invite" stays actionable;
+  // otherwise keep the earliest (createdAt asc).
+  const byUser = new Map<string, (typeof rows)[number]>();
+  for (const m of rows) {
+    const existing = byUser.get(m.userId);
+    if (!existing || (m.pending && !existing.pending)) byUser.set(m.userId, m);
+  }
+  const unique = [...byUser.values()];
 
   return unique.map((m) => {
     const group: TeamMember["group"] =
