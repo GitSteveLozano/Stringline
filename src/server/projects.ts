@@ -112,6 +112,7 @@ export type ProjectDetail = {
   milestones: MilestoneRow[];
   lostReason: string | null;
   lostNote: string | null;
+  invoice: { number: string; amount: number; paid: boolean } | null;
 };
 
 export async function getProjectDetail(id: string): Promise<ProjectDetail | null> {
@@ -149,5 +150,14 @@ export async function getProjectDetail(id: string): Promise<ProjectDetail | null
       paid: m.paidOn != null,
     }));
 
-  return { project: toViewModel(row), budget, changeOrders, milestones, lostReason: row.lostReason, lostNote: row.lostNote };
+  const inv = row.invoices[0];
+  const invoice = inv
+    ? {
+        number: inv.number,
+        amount: num(inv.amount),
+        paid: inv.milestones.length > 0 && inv.milestones.every((m) => m.paidOn != null),
+      }
+    : null;
+
+  return { project: toViewModel(row), budget, changeOrders, milestones, lostReason: row.lostReason, lostNote: row.lostNote, invoice };
 }

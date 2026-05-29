@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Pad, Stack, Eyebrow, H1, H3, Field, Spread, Pill, SectionBar, Mono, Button, Rule } from "@/components/ui";
 import { LIFECYCLE, money0, statusLabel, healthLabel } from "@/lib/demo-data";
 import { getProjectDetail } from "@/server/projects";
-import { advanceProjectStatus, markProjectLost, addChangeOrder, decideChangeOrder } from "@/server/actions";
+import { advanceProjectStatus, markProjectLost, addChangeOrder, decideChangeOrder, generateInvoice, markInvoicePaid } from "@/server/actions";
 
 const LOST_LABEL: Record<string, string> = {
   PRICE: "Price",
@@ -27,7 +27,7 @@ export async function ProjectDetail({ id }: { id: string }) {
     );
   }
 
-  const { project: p, budget, changeOrders, milestones, lostReason, lostNote } = detail;
+  const { project: p, budget, changeOrders, milestones, lostReason, lostNote, invoice } = detail;
   const isLost = lostReason != null;
   const canLose = !isLost && (p.status === "DRAFTING" || p.status === "SENT");
   const canChangeOrder = !isLost && (p.status === "IN_PROGRESS" || p.status === "DONE");
@@ -242,10 +242,20 @@ export async function ProjectDetail({ id }: { id: string }) {
               </form>
             </>
           )}
-          {p.status === "DONE" && (
-            <form action={advanceProjectStatus.bind(null, id, "PAID")}>
+          {p.status === "DONE" && !invoice && (
+            <form action={generateInvoice.bind(null, id)}>
               <Button variant="primary" type="submit" style={{ width: "100%" }}>Generate invoice</Button>
             </form>
+          )}
+          {p.status === "DONE" && invoice && !invoice.paid && (
+            <Stack gap="tight">
+              <div className="v2-quiet v2-body">
+                Invoice {invoice.number} · {money0(invoice.amount)} sent — awaiting payment.
+              </div>
+              <form action={markInvoicePaid.bind(null, id)}>
+                <Button variant="primary" type="submit" style={{ width: "100%" }}>Mark invoice paid</Button>
+              </form>
+            </Stack>
           )}
 
           {canLose && (
