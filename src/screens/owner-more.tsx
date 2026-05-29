@@ -20,9 +20,9 @@ const GROUPS: { heading: string; items: { label: string; icon: IconName; href?: 
   {
     heading: "Workspace",
     items: [
-      { label: "Settings", icon: "more" },
+      { label: "Settings", icon: "more", href: "/settings" },
       { label: "Pricing book", icon: "money" },
-      { label: "Integrations", icon: "queue" },
+      { label: "Integrations", icon: "queue", href: "/settings" },
     ],
   },
   {
