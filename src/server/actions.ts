@@ -646,3 +646,35 @@ export async function createClient(formData: FormData) {
   revalidatePath("/estimator/clients");
   redirect(`/client/${client.id}`);
 }
+
+// ── Team invites ───────────────────────────────────────────────
+
+/** Invite a teammate: create the user + a pending membership (Team confirms it). */
+export async function createMember(formData: FormData) {
+  const workspaceId = await getActiveWorkspaceId();
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return;
+  const roleRaw = String(formData.get("role") ?? "WORKER").toUpperCase();
+  const role = (["OWNER", "ESTIMATOR", "FOREMAN", "WORKER"].includes(roleRaw) ? roleRaw : "WORKER") as
+    | "OWNER" | "ESTIMATOR" | "FOREMAN" | "WORKER";
+  const email = String(formData.get("email") ?? "").trim() || null;
+  const phone = String(formData.get("phone") ?? "").trim() || null;
+  const rateRaw = parseFloat(String(formData.get("rate") ?? ""));
+
+  // Guard the unique email/phone constraints so a dup doesn't crash the action.
+  if (email && (await db.user.findUnique({ where: { email }, select: { id: true } }))) return;
+  if (phone && (await db.user.findUnique({ where: { phone }, select: { id: true } }))) return;
+
+  await db.user.create({
+    data: {
+      name,
+      email,
+      phone,
+      memberships: {
+        create: { workspaceId, role, baseHourly: Number.isFinite(rateRaw) ? rateRaw : null, pending: true },
+      },
+    },
+  });
+  revalidatePath("/owner/team");
+  redirect("/owner/team");
+}

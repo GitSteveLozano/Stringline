@@ -50,6 +50,12 @@ export async function OwnerTeam() {
         </Link>
       </Pad>
 
+      <Pad>
+        <Link href="/team/new" style={{ textDecoration: "none" }}>
+          <Button variant="primary" style={{ width: "100%" }}>+ Invite teammate</Button>
+        </Link>
+      </Pad>
+
       {/* Desktop: one roster table */}
       <DataTable
         columns={[
