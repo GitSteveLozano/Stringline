@@ -596,3 +596,35 @@ export async function createAssignment(formData: FormData) {
   revalidatePath("/schedule");
   redirect("/schedule");
 }
+
+/** Dispatch an asset to a project (creates a Dispatch, status OUT). */
+export async function createDispatch(formData: FormData) {
+  const workspaceId = await getActiveWorkspaceId();
+  const assetId = String(formData.get("assetId") ?? "").trim();
+  const projectId = String(formData.get("projectId") ?? "").trim();
+  const qty = parseInt(String(formData.get("qty") ?? ""), 10);
+  const dueStr = String(formData.get("dueBack") ?? "").trim();
+  if (!assetId || !projectId || !Number.isFinite(qty) || qty <= 0) return;
+
+  const [asset, project] = await Promise.all([
+    db.asset.findFirst({ where: { id: assetId, workspaceId }, select: { id: true } }),
+    db.project.findFirst({ where: { id: projectId, workspaceId }, select: { id: true } }),
+  ]);
+  if (!asset || !project) return;
+
+  const count = await db.dispatch.count({ where: { asset: { workspaceId } } });
+  await db.dispatch.create({
+    data: {
+      ticketId: `D-${1000 + count + 1}`,
+      assetId,
+      qty,
+      projectId,
+      sentOn: new Date(),
+      dueBack: dueStr ? new Date(dueStr) : null,
+      status: "OUT",
+    },
+  });
+  revalidatePath("/dispatch");
+  revalidatePath("/assets");
+  redirect("/dispatch");
+}
