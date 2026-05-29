@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Pad, Stack, Eyebrow, H1, SectionBar, Mono, Row, Pill } from "@/components/ui";
 import { money0 } from "@/lib/demo-data";
 import { initials } from "@/server/format";
@@ -26,16 +27,18 @@ export async function EstimatorClients() {
 
       <div>
         {clients.map((c) => (
-          <Row key={c.id} lead={<span className="v2-mono" style={{ fontWeight: 700 }}>{initials(c.name)}</span>}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="v2-h3">{c.name}</div>
-              <div className="v2-quiet" style={{ fontSize: 13, marginTop: 2 }}>
-                {clientKindLabel(c.kind)} · {c.projectCount} {c.projectCount === 1 ? "project" : "projects"}
+          <Link key={c.id} href={`/client/${c.id}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+            <Row lead={<span className="v2-mono" style={{ fontWeight: 700 }}>{initials(c.name)}</span>}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="v2-h3">{c.name}</div>
+                <div className="v2-quiet" style={{ fontSize: 13, marginTop: 2 }}>
+                  {clientKindLabel(c.kind)} · {c.projectCount} {c.projectCount === 1 ? "project" : "projects"}
+                </div>
               </div>
-            </div>
-            {c.activeValue > 0 && <Mono>{money0(c.activeValue)}</Mono>}
-            {c.isLead && <Pill tone="live" dot>Lead</Pill>}
-          </Row>
+              {c.activeValue > 0 && <Mono>{money0(c.activeValue)}</Mono>}
+              {c.isLead && <Pill tone="live" dot>Lead</Pill>}
+            </Row>
+          </Link>
         ))}
       </div>
     </>
