@@ -749,3 +749,20 @@ export async function updateClient(id: string, formData: FormData) {
   revalidatePath("/estimator/clients");
   redirect(`/client/${id}`);
 }
+
+/** Edit a project's basic details (name / address / contract value). */
+export async function updateProject(id: string, formData: FormData) {
+  const workspaceId = await getActiveWorkspaceId();
+  const owned = await db.project.findFirst({ where: { id, workspaceId }, select: { id: true } });
+  if (!owned) return;
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return;
+  const address = String(formData.get("address") ?? "").trim() || null;
+  const contractValue = parseMoney(String(formData.get("contractValue") ?? ""));
+
+  await db.project.update({ where: { id }, data: { name, address, contractValue } });
+  revalidatePath(`/project/${id}`);
+  revalidatePath("/owner/projects");
+  revalidatePath("/estimator/queue");
+  redirect(`/project/${id}`);
+}
